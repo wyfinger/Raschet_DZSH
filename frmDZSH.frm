@@ -28,6 +28,7 @@ Dim arrBaseRejims() ' НОМЕР, Название для базовых режимов, нужно при парсинге пр
 Const vbTab = "   "   ' Этот дебильный АРМ затыкается на некоторых приказах с табом
 
 
+
 Private Sub Initialize()
 '
 ' Подготовка - изымаем данные с листа в переменные
@@ -293,6 +294,41 @@ End If
 
 End Sub
 
+' #################################################################################
+
+Function Find_TKZ_Handle() As Long
+'
+' Поиск главного окна ТКЗ-2000
+'
+
+
+
+End Function
+
+' #################################################################################
+
+
+
+Private Sub CommandButton1_Click()
+'
+' Весь рабочий процесс
+'
+
+' Инициализация, берем данные с листа
+If Not Initialized Then Call Initialize
+
+If RootNode = 0 Then RootNode = Int(InputBox("Номер узла (рассчитываемые шины)?", "RootNode", 0))
+
+' А не ошибся ли пользователь?
+If Not Node_Exists(RootNode) Then
+  MsgBox "Узел " & RootNode & " отсутствует в таблице узлов", vbOKOnly + vbExclamation
+  Exit Sub
+End If
+
+' Найдем окно TKZ, если его нет - завершаемся с сообщением об ошибке
+TKZ_Handle& = FindWindow("TFormZD2", "")
+
+End Sub
 
 Private Sub UserForm_Initialize()
 '
