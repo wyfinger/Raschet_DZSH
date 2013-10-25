@@ -166,7 +166,6 @@ Next
 
 End Function
 
-
 Private Sub cbProcess2_Click()
 '
 ' Подготовка приказа проверки чувствительности
@@ -216,7 +215,7 @@ For i = 0 To UBound(list)
    NodeA = list(i)(1) ' RootNode
    NodeB = list(i)(2) ' номер противоположного узла первой ветви присоединения к питающему узлу
    frmDZSH.tbCommandList = frmDZSH.tbCommandList & vbCrLf
-   frmDZSH.tbCommandList = frmDZSH.tbCommandList & "ПОДРЕЖИМ  " & Podrejim & " /* " & Find_Node(PowerNode) & vbCrLf
+   frmDZSH.tbCommandList = frmDZSH.tbCommandList & "ПОДРЕЖИМ  " & Podrejim & " /* " & PowerNode & " [" & Find_Node(PowerNode) & "]" & vbCrLf
    BaseRejim = Podrejim
    ' Запишем название базового режима, чтобы можно было это вписать в результирующий лист,
    ' из протокола эту информацию не достать
@@ -241,6 +240,8 @@ For i = 0 To UBound(list)
    
    ' Найдем все присоединения питающего узла и отключим каждое в отдельном подрежиме, основанном на BaseRejim
    NodeBranch = Find_Branch_By_Node(arrBranch, PowerNode)
+   ' Issue#2: Проверяем, чтобы не отключить что-нибудь дважды. Найдем присоединения RootNode
+   RootNodeBranch = Find_Branch_By_Node(arrBranch, RootNode)
    For j = 0 To UBound(NodeBranch)
      T = arrBranch(NodeBranch(j), 1)
      If T <> 101 Then
@@ -248,14 +249,29 @@ For i = 0 To UBound(list)
        frmDZSH.tbCommandList = frmDZSH.tbCommandList & "ПОДРЕЖИМ  " & Podrejim & " " & BaseRejim & vbCrLf
        NodeA = arrBranch(NodeBranch(j), 3)
        NodeB = arrBranch(NodeBranch(j), 4)
-       If NodeA = PowerNode Then ContrNode = NodeB Else ContrNode = NodeA
-       Elem = arrBranch(NodeBranch(j), 5)
-       If Elem = 0 Then
-         frmDZSH.tbCommandList = frmDZSH.tbCommandList & "ОТКЛ      *" & PowerNode & "-" & ContrNode & _
-           " /* " & Find_Node(PowerNode) & " - " & Find_Node(ContrNode) & vbCrLf
-       Else
-         frmDZSH.tbCommandList = frmDZSH.tbCommandList & "ЭЛЕМЕНТ   " & Elem & _
-           " /* " & Find_Element(Elem) & vbCrLf
+       
+       ' Issue#2: Проверим, что ветвь, отходящая от питающего узла, котороую мы хотим отключить,
+       ' не связана с RootNode (все ветви RootNode кроме одной отключены в базовом режиме)
+       Elem = arrBranch(NodeBranch(j), 5)    ' Номер элемента той ветви от PowerNode, которую хотим отключить
+       Collision = False
+       For k = 0 To UBound(RootNodeBranch)
+         rElem = arrBranch(RootNodeBranch(k), 5)
+         If Elem = rElem Then
+           Collision = True
+           Exit For
+         End If
+       Next
+       
+       If Not Collision Then
+       
+         If NodeA = PowerNode Then ContrNode = NodeB Else ContrNode = NodeA
+         If Elem = 0 Then
+           frmDZSH.tbCommandList = frmDZSH.tbCommandList & "ОТКЛ      *" & PowerNode & "-" & ContrNode & _
+             " /* " & Find_Node(PowerNode) & " - " & Find_Node(ContrNode) & vbCrLf
+         Else
+           frmDZSH.tbCommandList = frmDZSH.tbCommandList & "ЭЛЕМЕНТ   " & Elem & _
+             " /* " & Find_Element(Elem) & vbCrLf
+         End If
        End If
      End If
    Next
