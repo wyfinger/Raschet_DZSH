@@ -75,7 +75,17 @@ If FileName <> "" Then
 End If
 
 End Function
-   
+
+Private Function Get_Class_Name(ByVal wnd As Long) As String
+
+  Dim ClassName As String
+  Dim ClassLen As Long
+  ClassName = Space(256)
+  ClassLen = GetClassName(wnd, ClassName, 256)
+  Get_Class_Name = Mid(ClassName, 1, ClassLen)
+  
+End Function
+
 Public Function Find_TKZ_Window_Enum_Proc(ByVal wnd As Long, ByVal lParam As Long) As Boolean
 '
 ' Функция обработчик перечисления всех окон в системе для
@@ -84,28 +94,76 @@ Public Function Find_TKZ_Window_Enum_Proc(ByVal wnd As Long, ByVal lParam As Lon
   Find_TKZ_Window_Enum_Proc = True
 
   Dim ExeName As String
+  Dim WndClass As String
+  Dim TForm1_Handle As Long
   
   If IsWindowVisible(wnd) And (GetParent(wnd) = 0) Then
   
     ExeName = UCase(ExtractFileName(Exe_Name_by_Window_Handle(wnd)))
-    If ExeName = "TKZ2000.EXE" Then
-      G_TKZ_Handle = wnd
-      Find_TKZ_Window_Enum_Proc = False
+    If (ExeName = "TKZ2000.EXE") Then
+      WndClass = Get_Class_Name(wnd)
+      If WndClass = "TForm1" Then
+        G_TKZ_Handle = wnd
+        Find_TKZ_Window_Enum_Proc = False
+      End If
     End If
     
   End If
  
- 
 End Function
 
-Public Function Find_TKZ_Window_Handle() As Long
+Private Function Find_SubClass_Recurce(hwnd As Long, sClassName As String, Optional iPos As Integer = 1) As Long
+'
+' Эта функция рекурсивно перебирает все дочерние окна hWnd, сверяя класc окна с sClassName
+' Если указан iPos функция возвращает iPos вхождение интересующего класса
+'
+
+Dim window_class As String
+
+window_class = Get_Class_Name(hwnd)
+If window_class = sClassName Then
+  iPos = iPos - 1
+  If iPos = 0 Then
+    Find_SubClass_Recurce = hwnd
+    Exit Function
+  End If
+End If
+
+Dim hext_handle As Long
+
+hext_handle = GetWindow(hwnd, GW_CHILD)
+If hext_handle > 0 Then Find_SubClass_Recurce = Find_SubClass_Recurce(hext_handle, sClassName, iPos)
+If Find_SubClass_Recurce > 0 Then Exit Function
+
+hext_handle = GetWindow(hwnd, GW_HWNDNEXT)
+If hext_handle > 0 Then Find_SubClass_Recurce = Find_SubClass_Recurce(hext_handle, sClassName, iPos)
+
+End Function
+
+Private Function Find_TKZ_Window_Handle() As Boolean
 '
 ' Поиск главного окна программы ТКЗ-2000
 '
 
   G_TKZ_Handle = 0
   Call EnumWindows(AddressOf Find_TKZ_Window_Enum_Proc, 0)
-
-  MsgBox G_TKZ_Handle
+  Find_TKZ_Window_Handle = G_TKZ_Handle <> 0
 
 End Function
+
+'#############################################################################################################
+
+Public Sub Raschet_DZSH()
+'
+' Main
+'
+
+' Ищем окно ТКЗ-2000, если его нет выводим сообщение и завершаемся
+If Not Find_TKZ_Window_Handle() Then
+ MsgBox "Окно ТКЗ-2000 не найдено, приложение должно быть запущено. Кроме этого должна быть загружена сеть для расчета.", vbExclamation + vbOKOnly
+ Exit Sub
+End If
+
+' Не проверяя в каком режиме работает программа (приказы или диалоговый расчет) выполним пункт меню
+
+End Sub
