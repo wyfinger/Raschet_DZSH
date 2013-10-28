@@ -39,16 +39,20 @@ Dim GT_Result As Long
                                                                            
 Dim RootNode As Long         ' Самый главный узел :)
 Dim arrRootBranch()          ' Список ветвей главного узла, заполняется в Get_Sensitivity_Code()
-Dim arrBranch()
 
-
+Dim arrBranch()              ' Массив ветвей и его копии
 Dim arrBranchCopy()
 Dim arrBranchCopy2()
-Dim arrNode()
-Dim arrElement()
+Dim arrNode()                ' Массив наименований узлов
+Dim arrElement()             ' Массив наименований элементов
+
+Dim arrPowerNodes()          ' Массив питающих узлов (узел и первая ветвь от RootNode в сторону питающего узла)
+                             ' заполняется в Find_Power_Nodes()
+                             
 Dim arrTrueBrach()           ' Список присоединений узла, кроме неотключаемых
 Dim arrBaseRejims()          ' НОМЕР, Название для базовых режимов, нужно при парсинге протокола по опробованию
 Const vbTab = "   "          ' Этот дебильный АРМ затыкается на некоторых приказах с табом
+                                                                           
                                                                            
 '##########################################################################[ Функции взаимодействия с окнами ]
 
@@ -219,6 +223,7 @@ d.GetFromClipboard
 Window_Get_Text = d.GetText
   
 End Function
+
 
 '#################################################################################################[Расчет ДЗШ]
 
@@ -640,7 +645,7 @@ Private Sub Find_Power_Nodes()
 ' Поиск питающих узлов для RootNode
 '
 
-Dim i, j, n As Long
+Dim i, j, n, k As Long
 
 ' Удаляем сразу ветви с 101 типом (отключенный ШСВ)
 For i = 1 To UBound(arrBranchCopy)
@@ -723,9 +728,42 @@ If err = 0 Then
   Next i
 End If
 
-End Sub
+Dim PNode As Long
 
-' Выводим номера питающих узлов и первую ветвь присоединения до них
+' Подготовим номера питающих узлов и первую ветвь присоединения до них
+NodeBranch = Find_Branch_By_Node(arrBranchCopy2, RootNode)
+For i = 0 To UBound(list)
+  PNode = list(i)
+  ' Найдем номер(а) элементов, в которые входят RootNode и PNode, если к питающему узлу удет не одна цепь
+  ' этих элементов может быть несколько
+  Elem = Find_Element_By_2Node(arrBranchCopy, RootNode, PNode)
+  On Error Resume Next
+  n = UBound(Elem)
+  If err = 0 Then
+    ' Найдем среди присоединений RootNode присоединение с элементом Elem
+    For j = 0 To n
+      e = Elem(j)
+      For k = LBound(NodeBranch) To UBound(NodeBranch)
+        If arrBranchCopy2(NodeBranch(k), 5) = e Then
+          If arrBranchCopy2(NodeBranch(k), 3) = RootNode Then
+            SecondNode = arrBranchCopy2(NodeBranch(k), 4)
+          Else
+            SecondNode = arrBranchCopy2(NodeBranch(k), 3)
+          End If
+          n_node = Trim(Find_Node(list(i)))
+          n_branch = Find_Branch_By_2Node(arrBranch, RootNode, SecondNode)
+          n_branch = arrBranch(n_branch, 5)
+          n_branch = Trim(Find_Element(n_branch))
+          tbBranchList.Text = tbBranchList.Text & PNode & vbTab & "(" & RootNode & "-" & SecondNode & ")" & vbTab & "/* " & n_node & " [" & n_branch & "]" & vbCrLf
+        End If
+      Next
+    Next
+  End If
+Next
+
+
+
+End Sub
 'tbBranchList.Text = ""
 'NodeBranch = Find_Branch_By_Node(arrBranchCopy2, RootNode)
 'For i = 0 To UBound(list)
