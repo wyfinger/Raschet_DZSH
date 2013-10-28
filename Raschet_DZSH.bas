@@ -629,6 +629,8 @@ Public Sub Raschet_DZSH()
     Print #FrFi, ProtokolText
     Close FrFi
   End If
+    
+  ' √отовим приказ дл€ проверки опробовани€
   
   
 End Sub
