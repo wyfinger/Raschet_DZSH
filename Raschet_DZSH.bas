@@ -37,15 +37,15 @@ Private Const MAX_PATH As Long = 260
 Dim GT_Class As String       ' Временная переменная класса для передачи в Enum-функцию
 Dim GT_Result As Long
                                                                            
-Dim RootNode As Integer      ' Самый главный узел :)
+Dim RootNode As Long         ' Самый главный узел :)
 Dim arrRootBranch()          ' Список ветвей главного узла, заполняется в Get_Sensitivity_Code()
-
 Dim arrBranch()
+
+
 Dim arrBranchCopy()
 Dim arrBranchCopy2()
 Dim arrNode()
 Dim arrElement()
-Dim Initialized
 Dim arrTrueBrach()           ' Список присоединений узла, кроме неотключаемых
 Dim arrBaseRejims()          ' НОМЕР, Название для базовых режимов, нужно при парсинге протокола по опробованию
 Const vbTab = "   "          ' Этот дебильный АРМ затыкается на некоторых приказах с табом
@@ -60,7 +60,7 @@ Private Function Exe_Name_by_Window_Handle(wnd As Long) As String
   Exe_Name_by_Window_Handle = ""
   
   Dim prcID As Long  ' Номер процесса
-  Dim prc As Long    ' Дискриптор доступа к данным процесса
+  Dim prc As Long    ' Дескриптор доступа к данным процесса
   Dim wt As String
   wt = Space(1024)
   
@@ -77,7 +77,7 @@ Finally:
 End Function
     
     
-Private Function ExtractFileName(FileName As String) As String
+Private Function Extract_File_Name(FileName As String) As String
 '
 ' Получение имени файла из полного пути и имени
 '
@@ -88,14 +88,14 @@ Private Function ExtractFileName(FileName As String) As String
     SlashPos = InStrRev(FileName, "\")
     If SlashPos > 0 Then
       SlashPos = SlashPos + 1
-      ExtractFileName = Mid(FileName, SlashPos, Len(FileName) - SlashPos)
+      Extract_File_Name = Mid(FileName, SlashPos, Len(FileName) - SlashPos)
     End If
   End If
 
 End Function
 
 
-Private Function ExtractFilePath(FileName As String) As String
+Private Function Extract_File_Path(FileName As String) As String
 '
 ' Получение пути к папке, содержащей файл (без завершающего слеша)
 '
@@ -106,7 +106,7 @@ Private Function ExtractFilePath(FileName As String) As String
     SlashPos = InStrRev(FileName, "\")
     If SlashPos > 0 Then
       SlashPos = SlashPos + 1
-      ExtractFileName = Mid(FileName, 1, SlashPos - 1)
+      Extract_File_Name = Mid(FileName, 1, SlashPos - 1)
     End If
   End If
 
@@ -139,7 +139,7 @@ Public Function Find_Window_Enum_Proc(ByVal wnd As Long, ByVal lParam As Long) A
   
   If IsWindowVisible(wnd) And (GetParent(wnd) = 0) Then
   
-    ExeName = UCase(ExtractFileName(Exe_Name_by_Window_Handle(wnd)))
+    ExeName = UCase(Extract_File_Name(Exe_Name_by_Window_Handle(wnd)))
     If (ExeName = "TKZ2000.EXE") Then
       WndClass = Get_Class_Name(wnd)
       If WndClass = GT_Class Then
@@ -168,7 +168,7 @@ End Function
 
 Private Function Find_SubClass_Recurce(hwnd As Long, sClassName As String, Optional iPos As Integer = 1) As Long
 '
-' Эта функция рекурсивно перебирает все дочерние окна hWnd, сверяя класc окна с sClassName
+' Эта функция рекурсивно перебирает все дочерние окна hWnd, сверяя клас окна с sClassName
 ' Если указан iPos функция возвращает iPos вхождение интересующего класса
 '
 
@@ -251,14 +251,12 @@ Private Sub Initialize()
   Set wshNode = Nothing
   Set wshElement = Nothing
 
-  Initialized = True
-
 End Sub
 
 
 Private Function Find_Branch_By_Node(BranchArray, Node)
 '
-' Ищем все ветви, в которые входит заданый узел
+' Ищем все ветви, в которые входит заданный узел
 '
 
   Dim rez()
@@ -381,7 +379,7 @@ End Function
 Private Function Get_Sensitivity_Code() As String
 '
 ' Подготовка приказа для оценки чувствительности ДЗШ
-' Ищем все присоединения текущего узла, делаем КЗ на укле в нормальном режиме,
+' Ищем все присоединения текущего узла, делаем КЗ на узле в нормальном режиме,
 ' а в подрежимах отключаем по одному присоединению
 '
 
@@ -486,9 +484,7 @@ Private Function Parse_Rezhim_Single(T, FromPos)
   Parse_Rezhim_Single = "[" & Prefix & "] " & Parse_Rezhim_Single
 
 End Function
-
                                                                                        
-'######################################################################################[Главный метод макроса]
 
 Private Sub Analiz_Sensitivity(Protokol As String)
 '
@@ -519,10 +515,10 @@ Private Sub Analiz_Sensitivity(Protokol As String)
   
   objRez.Cells(1, 1).Value = "Узел " & RootNode & " (" & Find_Node(RootNode) & ")"
   objRez.Cells(2, 1).Value = "ТКЗ для чувств. пуск. и изб. органов"
-  objRez.Cells(2, 2).Value = "КЗ 1"
-  objRez.Cells(2, 3).Value = "КЗ 2"
-  objRez.Cells(2, 4).Value = "КЗ 1+1"
-  objRez.Cells(2, 5).Value = "КЗ 3"
+  objRez.Cells(2, 2).Value = "КЗ(3)"
+  objRez.Cells(2, 3).Value = "КЗ(2)"
+  objRez.Cells(2, 4).Value = "КЗ(1+1)"
+  objRez.Cells(2, 5).Value = "КЗ(1)"
 
   ' Пройдемся по подрежимам
   Dim list()
@@ -543,7 +539,7 @@ Private Sub Analiz_Sensitivity(Protokol As String)
     j = j + 1
     StartPos = InStr(StartPos, Protokol, "Подрежим  " & j + 1)
     If StartPos > 0 Then R = Parse_Rezhim_Single(Protokol, StartPos)
-    DoEvents
+    DoEvents     ' Для того, чтобы работал выход по  Ctrl+C
   Loop While StartPos > 0
 
   ' Массив наименований режимов и соответствующих токов заполнен, переносим его на лист
@@ -556,6 +552,227 @@ Private Sub Analiz_Sensitivity(Protokol As String)
 
 End Sub
 
+
+Private Function Delete_Interm_Nodes(Without As Long) As Long
+'
+' Удаление промежуточных узлов, т.е. тех у которых только два присоединиения
+' Функция не гарантирует полного удаления промежуточных п/станций, ее нужно вызывать
+' до тех пор, пока не будет сделано никаких изменений (функция возвращает количество
+' удаленных узлов
+'
+
+  Dim i, j, n As Long
+  Dim Node As Long
+  Dim NodeBranch()
+  Dim NodePosA, NodePosB As Long
+  Dim ContrNodeA, ContrNodeB As Long
+  Dim DestType, DestElement As Long
+
+  j = 0
+  For i = 1 To UBound(arrNode)
+    Node = arrNode(i, 1)
+    If Node <> Without Then
+      NodeBranch = Find_Branch_By_Node(arrBranchCopy, Node)
+      On Error Resume Next
+      n = -1
+      n = UBound(NodeBranch)
+      If err = 0 Then
+        ' Промежуточные узлы
+        If n = 1 Then
+          ' В ветвях текущего узла найдем позицию текущего узла, чтобы выкинуть из ветвей текущий узел
+          If arrBranchCopy(NodeBranch(0), 3) = Node Then NodePosA = 3
+          If arrBranchCopy(NodeBranch(0), 4) = Node Then NodePosA = 4
+          If arrBranchCopy(NodeBranch(1), 3) = Node Then NodePosB = 3
+          If arrBranchCopy(NodeBranch(1), 4) = Node Then NodePosB = 4
+      
+          ' Найдем противоположные узлы (номера узлов)
+          If arrBranchCopy(NodeBranch(0), 3) = Node Then
+            ContrNodeA = arrBranchCopy(NodeBranch(0), 4)
+          Else
+            ContrNodeA = arrBranchCopy(NodeBranch(0), 3)
+          End If
+          If arrBranchCopy(NodeBranch(1), 3) = Node Then
+            ContrNodeB = arrBranchCopy(NodeBranch(1), 4)
+          Else
+            ContrNodeB = arrBranchCopy(NodeBranch(1), 3)
+          End If
+          If ContrNodeA <> ContrNodeB Then
+            ' Если с одной из сторон от промежуточного узла ветвь была 3 или 4 типа - результирующая
+            ' ветвь должна тоже быть генератором или трансформатором
+            DestType = 0
+            ' Копируем тип ветви
+            If (arrBranchCopy(NodeBranch(0), 1) > 1) Then DestType = arrBranchCopy(NodeBranch(0), 1)
+            If (arrBranchCopy(NodeBranch(1), 1) > 1) Then DestType = arrBranchCopy(NodeBranch(1), 1)
+            ' Номер элемента распространяется от Without (это RootNode), чтобы
+            ' потом можно было легко определить присоединение от RootNode, идущее к питающему узлу
+            DestElement = 0
+            If (arrBranchCopy(NodeBranch(0), 3) = Without) Or (arrBranchCopy(NodeBranch(0), 4) = Without) Then DestElement = arrBranchCopy(NodeBranch(0), 5)
+            If (arrBranchCopy(NodeBranch(1), 3) = Without) Or (arrBranchCopy(NodeBranch(1), 4) = Without) Then DestElement = arrBranchCopy(NodeBranch(1), 5)
+      
+            ' Изменения
+            If (DestType = 0) Or (DestType = 3) Then
+              arrBranchCopy(NodeBranch(0), 1) = DestType
+              arrBranchCopy(NodeBranch(0), NodePosA) = ContrNodeB
+              arrBranchCopy(NodeBranch(0), 5) = DestElement
+              arrBranchCopy(NodeBranch(1), 3) = 0
+              arrBranchCopy(NodeBranch(1), 4) = 0
+              arrBranchCopy(NodeBranch(1), 5) = 0
+              j = j + 1
+            End If
+          End If
+        End If
+        ' Тупики (узлы, которые входят только в одну ветвь)
+        If n = 0 Then
+          arrBranchCopy(NodeBranch(0), 3) = 0
+          arrBranchCopy(NodeBranch(0), 4) = 0
+        End If
+      End If
+    End If
+    DoEvents     ' Для того, чтобы работал выход по  Ctrl+C
+  Next
+  Delete_Interm_Nodes = j
+
+End Function
+
+
+Private Sub Find_Power_Nodes()
+'
+' Поиск питающих узлов для RootNode
+'
+
+Dim i, j, n As Long
+
+' Удаляем сразу ветви с 101 типом (отключенный ШСВ)
+For i = 1 To UBound(arrBranchCopy)
+  If arrBranchCopy(i, 1) = 101 Then
+    arrBranchCopy(i, 3) = 0
+    arrBranchCopy(i, 4) = 0
+  End If
+  ' Также затираем номера элементов в копиях таблицы ветвей
+  arrBranchCopy(i, 5) = 0
+  arrBranchCopy2(i, 5) = 0
+Next
+
+' Пройдем по присоединениям RootNode и проставим отходящим от него ветвям уникальный номер
+' элемента. При удалении промежуточных подстанций в Delete_Interm_Nodes()
+' если один из узлов ветви = RootNode его номер элемента будет распространяться на вновь
+' образованную ветвь
+
+'DEL NodeBranch = Find_Branch_By_Node(arrBranchCopy, RootNode)
+For i = 0 To UBound(arrRootBranch)
+  arrBranchCopy(arrRootBranch(i), 5) = i + 1
+  arrBranchCopy2(arrRootBranch(i), 5) = i + 1
+Next
+
+Do
+  j = 0
+  ' Удаляем промежуточные узлы и тупики (узлы только с одной ветвью)
+   n = Delete_Interm_Nodes(RootNode)
+   j = j + n
+
+  ' Удаляем тупики в виде нейтралей и тр-ров на ноль (ТСН) но не генераторы
+  For i = 1 To UBound(arrBranchCopy)
+    If (arrBranchCopy(i, 1) <> 4) And (arrBranchCopy(i, 1) <> 3) Then
+      If (arrBranchCopy(i, 3) = 0) And (arrBranchCopy(i, 4) <> 0) Then
+        arrBranchCopy(i, 4) = 0
+        j = j + 1
+      End If
+      If (arrBranchCopy(i, 4) = 0) And (arrBranchCopy(i, 3) <> 0) Then
+        arrBranchCopy(i, 3) = 0
+        j = j + 1
+      End If
+    End If
+  Next
+Loop While j > 0
+
+
+
+' Ищем противоположные узлы
+Dim list()
+j = 0
+NodeBranch = Find_Branch_By_Node(arrBranchCopy, RootNode)
+On Error Resume Next
+n = UBound(NodeBranch)
+If err = 0 Then
+  For i = 0 To n
+    If arrBranchCopy(NodeBranch(i), 3) = RootNode Then
+      DestNode = arrBranchCopy(NodeBranch(i), 4)
+    Else
+      DestNode = arrBranchCopy(NodeBranch(i), 3)
+    End If
+    ' Не добавляем дубликаты, которые могут появиться из за шутнирования СВ линиями (кольца)
+    R = False
+    On Error Resume Next
+    kn = UBound(list)
+    If err = 0 Then
+      For k = 0 To kn
+        If list(k) = DestNode Then
+          R = True
+          Exit For
+        End If
+      Next k
+    Else
+      R = False
+    End If
+
+    If (Not R) And (DestNode <> 0) Then
+      ReDim Preserve list(j)
+      list(j) = DestNode
+      j = j + 1
+    End If
+  Next i
+End If
+
+End Sub
+
+' Выводим номера питающих узлов и первую ветвь присоединения до них
+'tbBranchList.Text = ""
+'NodeBranch = Find_Branch_By_Node(arrBranchCopy2, RootNode)
+'For i = 0 To UBound(list)
+'  PNode = list(i)
+'  ' Найдем номер(а) элементов, в которые входят RootNode и PNode, если к питающему узлу удет не одна цепь
+'  ' этих элементов может быть несколько
+'  Elem = Find_Element_By_2Node(arrBranchCopy, RootNode, PNode)
+'  On Error Resume Next
+'  n = UBound(Elem)
+'  If err = 0 Then
+'    ' Найдем среди присоединений RootNode присоединение с элементом Elem
+'    For j = 0 To n
+'      e = Elem(j)
+'      For k = LBound(NodeBranch) To UBound(NodeBranch)
+'        If arrBranchCopy2(NodeBranch(k), 5) = e Then
+'          If arrBranchCopy2(NodeBranch(k), 3) = RootNode Then
+'            SecondNode = arrBranchCopy2(NodeBranch(k), 4)
+'          Else
+'            SecondNode = arrBranchCopy2(NodeBranch(k), 3)
+'          End If
+'          n_node = Trim(Find_Node(list(i)))
+'          n_branch = Find_Branch_By_2Node(arrBranch, RootNode, SecondNode)
+'          n_branch = arrBranch(n_branch, 5)
+'          n_branch = Trim(Find_Element(n_branch))
+'          tbBranchList.Text = tbBranchList.Text & PNode & vbTab & "(" & RootNode & "-" & SecondNode & ")" & vbTab & "/* " & n_node & " [" & n_branch & "]" & vbCrLf
+'        End If
+'      Next
+'    Next
+'  End If
+'Next
+'
+'  SecondNode = Path(UBound(Path))
+'  tbBranchList.Text = tbBranchList.Text & list(i) & " (" & RootNode & "-" & SecondNode & ") /*" & Find_Node(list(i)) & vbCrLf
+'Next
+
+' Выводим диагностическое сообщение
+'cbProcess2.Enabled = True
+'Label1.Caption = "Перечислить питающие узлы: НОМЕР_УЗЛА (НОМ1-НОМ2) - ветвь к питающему узлу"
+'If Not cbMessages.Value Then
+'  MsgBox "Автоматически найдены питающие узлы, проверьте, удалите ТСН/РТСН, " & _
+'    "особо проверьте ветви к питающим узлам"
+'End If
+
+'End Sub
+
+
+'######################################################################################[Главный метод макроса]
 
 Public Sub Raschet_DZSH()
 '
@@ -576,17 +793,17 @@ Public Sub Raschet_DZSH()
     MsgBox "Окно ТКЗ-2000 не найдено, приложение должно быть запущено. Кроме этого должна быть загружена сеть для расчета.", vbExclamation + vbOKOnly
     Exit Sub
   End If
-
+  
   ' Инициализация, выбираем данные из листов
   Initialize
-
+  
   ' Получаем номер узла (вообще-то узел может быть не только числовой)
   RootNode = Int(InputBox("Номер узла (рассчитываемые шины)?", "RootNode", 0))
   If Not Node_Exists(RootNode) Then
     MsgBox "Узел " & RootNode & " не найден в сети, дальнейшая работа невозможна.", vbExclamation + vbOKOnly
     Exit Sub
   End If
-
+  
   ' Не проверяя в каком режиме работает программа (приказы или диалоговый расчет) выполним пункт меню
   ' "Расширенный формат задания для расчета..."
   Call SendMessage(MainFormHandle, WM_COMMAND, 12, 0&)
@@ -615,22 +832,24 @@ Public Sub Raschet_DZSH()
   ' Анализ протокола расчета
   Analiz_Sensitivity ProtokolText
 
-  ' Предложить пользователю сохранить расширеннный протокол (вначале добавлен исходный приказ с комментарими)
+  ' Предложить пользователю сохранить расширенный протокол (вначале добавлен исходный приказ с комментариями)
   ProtokolText = CommandsText & vbCrLf & "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" & vbCrLf & ProtokolText
 
   ' Предложим пользователю сохранить протокол в файл
   Dim filePRT
   Dim FrFi As Integer
   
-  filePRT = Application.GetSaveAsFilename(ActiveWorkbook.Path & "\Чувствительность " & RootNode & " узел.prt", "Файлы протокола АРМ (*.prt), *.prt")
-  If filePRT <> "False" Then
-    FrFi = FreeFile
-    Open filePRT For Output As FrFi
-    Print #FrFi, ProtokolText
-    Close FrFi
-  End If
+  'filePRT = Application.GetSaveAsFilename(ActiveWorkbook.Path & "\Чувствительность " & RootNode & " узел.prt", "Файлы протокола АРМ (*.prt), *.prt")
+  'If filePRT <> "False" Then
+  '  FrFi = FreeFile
+  '  Open filePRT For Output As FrFi
+  '  Print #FrFi, ProtokolText
+  '  Close FrFi
+  'End If
     
   ' Готовим приказ для проверки опробования
+  Call Find_Power_Nodes
+  
   
   
 End Sub
