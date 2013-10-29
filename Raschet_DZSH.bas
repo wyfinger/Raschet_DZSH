@@ -883,47 +883,173 @@ For i = 0 To UBound(arrPowerNodes)
    NodeBranch = Find_Branch_By_Node(arrBranch, PowerNode)
    For j = 0 To UBound(NodeBranch)
      T = arrBranch(NodeBranch(j), 1)
-     If T <> 101 Then
+     
+     ' Issue#2: Проверим, что ветвь, отходящая от питающего узла, котороую мы хотим отключить,
+     ' не ведет к RootNode (все ветви RootNode кроме одной отключены в базовом режиме)
+     Elem = arrBranch(NodeBranch(j), 5)  ' Номер элемента той ветви от PowerNode, которую хотим отключить
+     Collision = False
+     For k = 0 To UBound(arrRootBranch)
+       rElem = arrBranch(arrRootBranch(k), 5)
+       If Elem = rElem Then
+         Collision = True
+         Exit For
+       End If
+     Next
+     
+     If (T <> 101) And Not Collision Then
        Podrejim = Podrejim + 1
        R = R & "ПОДРЕЖИМ  " & Podrejim & " " & BaseRejim & vbCrLf
        NodeA = arrBranch(NodeBranch(j), 3)
        NodeB = arrBranch(NodeBranch(j), 4)
-       
-       ' Issue#2: Проверим, что ветвь, отходящая от питающего узла, котороую мы хотим отключить,
-       ' не ведет к RootNode (все ветви RootNode кроме одной отключены в базовом режиме)
-       Elem = arrBranch(NodeBranch(j), 5)  ' Номер элемента той ветви от PowerNode, которую хотим отключить
-       Collision = False
-       For k = 0 To UBound(arrRootBranch)
-         rElem = arrBranch(arrRootBranch(k), 5)
-         If Elem = rElem Then
-           Collision = True
-           Exit For
-         End If
-       Next
-       
-       If Not Collision Then
-         If NodeA = PowerNode Then
-           CrossNode = NodeB
-         Else
-           CrossNode = NodeA
-         End If
-         If Elem = 0 Then
-           R = R & "ОТКЛ      *" & PowerNode & "-" & CrossNode & _
-             " /* " & Find_Node(PowerNode) & " - " & Find_Node(CrossNode) & vbCrLf
-         Else
-           R = R & "ЭЛЕМЕНТ   " & Elem & _
-             " /* " & Find_Element(Elem) & vbCrLf
-         End If
+              
+       If NodeA = PowerNode Then
+         CrossNode = NodeB
+       Else
+         CrossNode = NodeA
+       End If
+      
+       If Elem = 0 Then
+         R = R & "ОТКЛ      *" & PowerNode & "-" & CrossNode & _
+         " /* " & Find_Node(PowerNode) & " - " & Find_Node(CrossNode) & vbCrLf
+       Else
+         R = R & "ЭЛЕМЕНТ   " & Elem & _
+         " /* " & Find_Element(Elem) & vbCrLf
        End If
      End If
+     
    Next
    Podrejim = Podrejim + 1
-   
 Next
 
 Get_Testing_Code = R
 
 End Function
+
+
+Private Function Is_Sub_Rejim(Protokol, CurPos)
+'
+' Проверка стоим ли сейчас в подрежиме, основанном на другом режиме
+' (ремонт или отключение на питающем узле)
+'
+
+Dim apos, bpos, cpos As Long
+
+Is_Sub_Rejim = False
+apos = InStr(CurPos, Protokol, "Подрежим  ")
+
+If apos > 0 Then
+  bpos = InStr(apos + 10, Protokol, " ")
+  cpos = InStr(apos + 10, Protokol, vbCrLf)
+  If cpos > bpos Then Is_Sub_Rejim = True
+End If
+
+End Function
+
+
+Private Function Find_BaseRejim_Name(RejimNo)
+'
+' Ищем наименование режима из базовых режимов в arrBaseRejims()
+'
+
+Dim i As Long
+
+Find_BaseRejim_Name = ""
+For i = 0 To UBound(arrBaseRejims)
+  If arrBaseRejims(i)(0) = Int(RejimNo) Then
+    Find_BaseRejim_Name = arrBaseRejims(i)(1)
+    Exit For
+  End If
+Next
+
+End Function
+
+
+Private Function Get_Rejim_Name(Protokol, CurPos)
+'
+' Если стоим на базовом подрежиме - берем его наименование,
+' если это субрежим - берем наименование отключаемого элемента
+'
+
+Dim apos, bpos As Long
+Dim Prefix As String
+
+' Найдем номер режима, если это подрежим - номер состоит из двух чисел,
+' если основной - одного
+apos = InStr(CurPos, Protokol, "Подрежим")
+bpos = InStr(apos, Protokol, vbCrLf)
+If (apos > 0) And (bpos > apos) Then
+  Prefix = Trim(Mid(Protokol, apos + 8, bpos - apos - 8))
+End If
+
+apos = 0
+bpos = 0
+
+If Is_Sub_Rejim(Protokol, CurPos) Then
+  apos = InStr(CurPos, Protokol, "(")
+  bpos = InStr(apos, Protokol, ")")
+  If (apos > 0) And (bpos > apos) Then
+    Get_Rejim_Name = "+Откл " & Trim(Mid(Protokol, apos + 1, bpos - apos - 1))
+  End If
+Else
+  apos = InStr(CurPos + 10, Protokol, vbCrLf)
+  Get_Rejim_Name = "[" & Prefix & "] " & Find_BaseRejim_Name(Trim(Mid(Protokol, CurPos + 10, apos - (CurPos + 10))))
+End If
+  
+End Function
+
+
+Private Sub Analiz_Testing(Protokol As String)
+'
+' Парсинг протокола по опробованию
+'
+
+Dim objWorkbook, objRez
+Dim s, i As Long
+
+' Результаты быдем выводить в тот же лист, что и результаты по проверке чувствительности
+' в минимальном режиме
+Set objWorkbook = ActiveWorkbook
+Set objRez = objWorkbook.ActiveSheet
+s = objRez.UsedRange.Rows.Count + 2
+
+objRez.Cells(s, 1).Value = "ТКЗ для опробования"
+objRez.Cells(s, 2).Value = "КЗ(3)"
+objRez.Cells(s, 3).Value = "КЗ(2)"
+objRez.Cells(s, 4).Value = "КЗ(1+1)"
+objRez.Cells(s, 5).Value = "КЗ(1)"
+
+' Пройдемся по подрежимам
+Dim list()
+Dim j As Long
+Dim StartPos As Long
+Dim R, RejimName As String
+Dim Line
+j = 0
+
+StartPos = InStr(Protokol, "Р Е З У Л Ь Т А Т Ы    Р А С Ч Е Т А")
+StartPos = InStr(StartPos, Protokol, "Подрежим  " & j + 1)
+
+Do
+  ReDim Preserve list(j)
+  RejimName = Get_Rejim_Name(Protokol, StartPos)
+  Line = Parse_Current_Line(Protokol, StartPos, StartPos)
+      
+  list(j) = Array(RejimName, Line)
+  j = j + 1
+  StartPos = InStr(StartPos, Protokol, "Подрежим  " & j + 1)
+  DoEvents     ' Для того, чтобы работал выход по  Ctrl+C
+Loop While StartPos > 0
+
+' Массив наименований режимов и соответствующих токов заполнен, переносим его на лист
+objRez.Cells(s, 1).Value = "ТКЗ для режима опробования"
+For i = 0 To UBound(list)
+  objRez.Cells(s + i + 1, 1).Value = list(i)(0)
+  For j = 0 To 3
+    objRez.Cells(s + i + 1, j + 2).Value = list(i)(1)(j + 1)
+  Next j
+Next i
+
+End Sub
 
 
 '######################################################################################[Главный метод макроса]
@@ -958,22 +1084,23 @@ Public Sub Raschet_DZSH()
   RootNode = Int(Answer)
   If Not Node_Exists(RootNode) Then
     MsgBox "Узел " & RootNode & " не найден в сети, дальнейшая работа невозможна.", vbExclamation + vbOKOnly
-
+    Exit Sub
   End If
 
   ' Не проверяя в каком режиме работает программа (приказы или диалоговый расчет) выполним пункт меню
-  ' "Расширенный формат задания для расчета..."
-  Call SendMessage(MainFormHandle, WM_COMMAND, 12, 0&)
+  Call SendMessage(MainFormHandle, WM_COMMAND, 12, 0&)     ' "Расширенный формат задания для расчета..."
 
   ' Найдем окно диалога задания приказов
   CommandFormHandle = Find_TKZ_Window_Handle("TFormZD2")
 
   ' Откроем окно протокола и очистим его
-  Call SendMessage(MainFormHandle, WM_COMMAND, 12, 0&)
-  Call SendMessage(CommandFormHandle, WM_COMMAND, 187, 0&)
+  Call SendMessage(CommandFormHandle, WM_COMMAND, 187, 0&) ' "Открыть протокол..."
+  Call SendMessage(CommandFormHandle, WM_COMMAND, 200, 0&) ' "Очистить задание"
   ProtokolHandle = Find_TKZ_Window_Handle("TForm3")
   ProtokolMemo = Find_SubClass_Recurce(ProtokolHandle, "TMemo")
-  Call SendMessage(ProtokolHandle, WM_COMMAND, 247, 0&)
+  Call SendMessage(ProtokolHandle, WM_COMMAND, 247, 0&)    ' "Очистить протокол"
+
+  ' <<< Проверка чувствительности пусковых/избирательных органов
 
   ' Готовим приказ для проверки чувствительности и копируем его в окно приказов ТКЗ-2000
   CommandsText = Get_Sensitivity_Code()
@@ -981,9 +1108,9 @@ Public Sub Raschet_DZSH()
   Window_Set_Text CommandRichEdit, CommandsText
 
   ' Делаем расчет с эквивалентированием - это значительно быстрее
-  Call SendMessage(CommandFormHandle, WM_COMMAND, 179, 0&)
+  Call SendMessage(CommandFormHandle, WM_COMMAND, 179, 0&) ' "Расчет с эквиваленированием"
 
-  ' Подождем секунду и заберем результат для анализа
+  ' Заберем результат для анализа
   ProtokolText = Window_Get_Text(ProtokolMemo)
 
   ' Анализ протокола расчета
@@ -992,25 +1119,45 @@ Public Sub Raschet_DZSH()
   ' Предложить пользователю сохранить расширенный протокол (вначале добавлен исходный приказ с комментариями)
   ProtokolText = CommandsText & vbCrLf & "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" & vbCrLf & ProtokolText
 
-  ' Предложим пользователю сохранить протокол в файл
   Dim filePRT
   Dim FrFi As Integer
 
-  'filePRT = Application.GetSaveAsFilename(ActiveWorkbook.Path & "\Чувствительность " & RootNode & " узел.prt", "Файлы протокола АРМ (*.prt), *.prt")
-  'If filePRT <> "False" Then
-  '  FrFi = FreeFile
-  '  Open filePRT For Output As FrFi
-  '  Print #FrFi, ProtokolText
-  '  Close FrFi
-  'End If
+  filePRT = Application.GetSaveAsFilename(ActiveWorkbook.Path & "\Чувствительность " & RootNode & " узел.prt", "Файлы протокола АРМ (*.prt), *.prt")
+  If filePRT <> "False" Then
+    FrFi = FreeFile
+    Open filePRT For Output As FrFi
+    Print #FrFi, ProtokolText
+    Close FrFi
+  End If
+
+  ' <<< Проверка чувствительности в режиме опробования
 
   ' Готовим приказ для проверки опробования
   Call Find_Power_Nodes
 
   CommandsText = Get_Testing_Code()
   
-  Dim d As New DataObject
-  d.SetText (CommandsText)
-  d.PutInClipboard
+  ' Очистим протокол и окно приказов, скопируем приказ и выполним его
+  Call SendMessage(ProtokolHandle, WM_COMMAND, 247, 0&)    ' "Очистить протокол"
+  Call SendMessage(CommandFormHandle, WM_COMMAND, 200, 0&) ' "Очистить задание"
+
+  Window_Set_Text CommandRichEdit, CommandsText
+  Call SendMessage(CommandFormHandle, WM_COMMAND, 179, 0&) ' "Расчет с эквиваленированием"
+  
+  ' Заберем результат для анализа
+  ProtokolText = Window_Get_Text(ProtokolMemo)
+  
+  ' Анализируем резальтаты расчета
+  Analiz_Testing (ProtokolText)
+
+  ' Предложить пользователю сохранить расширенный протокол с комментариями
+  ProtokolText = CommandsText & vbCrLf & "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" & vbCrLf & ProtokolText
+  filePRT = Application.GetSaveAsFilename(ActiveWorkbook.Path & "\Опробование " & RootNode & " узел.prt", "Файлы протокола АРМ (*.prt), *.prt")
+  If filePRT <> "False" Then
+    FrFi = FreeFile
+    Open filePRT For Output As FrFi
+    Print #FrFi, ProtokolText
+    Close FrFi
+  End If
 
 End Sub
