@@ -48,9 +48,13 @@ Dim arrElement()             ' Массив наименований элеме�
 
 Dim arrPowerNodes()          ' Массив питающих узлов (узел и первая ветвь от RootNode в сторону питающего узла)
                              ' заполняется в Find_Power_Nodes()
-
+Dim arrBaseRejims()          ' Массив базовых режимов для проверки чувствительности,
+                             ' заполняется при подготовке приказа в Get_Testing_Code()
+                             ' т.к. из протокола расчета эту инфу не получить
+                             
+                             
 Dim arrTrueBrach()           ' Список присоединений узла, кроме неотключаемых
-Dim arrBaseRejims()          ' НОМЕР, Название для базовых режимов, нужно при парсинге протокола по опробованию
+          ' НОМЕР, Название для базовых режимов, нужно при парсинге протокола по опробованию
 Const vbTab = "   "          ' Этот дебильный АРМ затыкается на некоторых приказах с табом
 
 
@@ -555,7 +559,7 @@ Private Sub Analiz_Sensitivity(Protokol As String)
 
   ' Подберем подходящее имя для нового листа
   TempSheetName = RootNode & " (" & Find_Node(RootNode) & ")"
-  For i = 0 To 25
+  For i = 0 To 255          ' Врятли кто-то создаст столько вкладок :)
     If i = 0 Then
       NewSheetName = TempSheetName
     Else
@@ -694,115 +698,115 @@ Private Sub Find_Power_Nodes()
 ' Поиск питающих узлов для RootNode
 '
 
-Dim i, j, n, k, l, kn As Long
+  Dim i, j, n, k, l, kn As Long
 
-' Удаляем сразу ветви с 101 типом (отключенный ШСВ)
-For i = 1 To UBound(arrBranchCopy)
-  If arrBranchCopy(i, 1) = 101 Then
-    arrBranchCopy(i, 3) = 0
-    arrBranchCopy(i, 4) = 0
-  End If
-  ' Также затираем номера элементов в копиях таблицы ветвей
-  arrBranchCopy(i, 5) = 0
-  arrBranchCopy2(i, 5) = 0
-Next
-
-' Пройдем по присоединениям RootNode и проставим отходящим от него ветвям уникальный номер
-' элемента. При удалении промежуточных подстанций в Delete_Interm_Nodes()
-' если один из узлов ветви = RootNode его номер элемента будет распространяться на вновь
-' образованную ветвь
-
-For i = 0 To UBound(arrRootBranch)
-  arrBranchCopy(arrRootBranch(i), 5) = i + 1
-  arrBranchCopy2(arrRootBranch(i), 5) = i + 1
-Next
-
-Do
-  j = 0
-  ' Удаляем промежуточные узлы и тупики (узлы только с одной ветвью)
-   n = Delete_Interm_Nodes(RootNode)
-   j = j + n
-
-  ' Удаляем тупики в виде нейтралей и тр-ров на ноль (ТСН) но не генераторы
+  ' Удаляем сразу ветви с 101 типом (отключенный ШСВ)
   For i = 1 To UBound(arrBranchCopy)
-    If (arrBranchCopy(i, 1) <> 4) And (arrBranchCopy(i, 1) <> 3) Then
-      If (arrBranchCopy(i, 3) = 0) And (arrBranchCopy(i, 4) <> 0) Then
-        arrBranchCopy(i, 4) = 0
+    If arrBranchCopy(i, 1) = 101 Then
+      arrBranchCopy(i, 3) = 0
+      arrBranchCopy(i, 4) = 0
+    End If
+    ' Также затираем номера элементов в копиях таблицы ветвей
+    arrBranchCopy(i, 5) = 0
+    arrBranchCopy2(i, 5) = 0
+  Next
+
+  ' Пройдем по присоединениям RootNode и проставим отходящим от него ветвям уникальный номер
+  ' элемента. При удалении промежуточных подстанций в Delete_Interm_Nodes()
+  ' если один из узлов ветви = RootNode его номер элемента будет распространяться на вновь
+  ' образованную ветвь
+
+  For i = 0 To UBound(arrRootBranch)
+    arrBranchCopy(arrRootBranch(i), 5) = i + 1
+    arrBranchCopy2(arrRootBranch(i), 5) = i + 1
+  Next
+
+  Do
+    j = 0
+    ' Удаляем промежуточные узлы и тупики (узлы только с одной ветвью)
+    n = Delete_Interm_Nodes(RootNode)
+    j = j + n
+
+    ' Удаляем тупики в виде нейтралей и тр-ров на ноль (ТСН) но не генераторы
+    For i = 1 To UBound(arrBranchCopy)
+      If (arrBranchCopy(i, 1) <> 4) And (arrBranchCopy(i, 1) <> 3) Then
+        If (arrBranchCopy(i, 3) = 0) And (arrBranchCopy(i, 4) <> 0) Then
+          arrBranchCopy(i, 4) = 0
+          j = j + 1
+        End If
+        If (arrBranchCopy(i, 4) = 0) And (arrBranchCopy(i, 3) <> 0) Then
+          arrBranchCopy(i, 3) = 0
+          j = j + 1
+        End If
+      End If
+    Next
+  Loop While j > 0
+
+  ' Ищем противоположные узлы
+  Dim list()
+  Dim NodeBranch()
+  Dim DestNode As Long
+  Dim R As Boolean
+
+  j = 0
+  NodeBranch = Find_Branch_By_Node(arrBranchCopy, RootNode)
+  On Error Resume Next
+  n = UBound(NodeBranch)
+  If err = 0 Then
+    For i = 0 To n
+      If arrBranchCopy(NodeBranch(i), 3) = RootNode Then
+        DestNode = arrBranchCopy(NodeBranch(i), 4)
+      Else
+        DestNode = arrBranchCopy(NodeBranch(i), 3)
+      End If
+      ' Не добавляем дубликаты, которые могут появиться из за шутнирования СВ линиями (кольца)
+      If (Array_Exists(list, DestNode) = -1) And (DestNode <> 0) Then
+        ReDim Preserve list(j)
+        list(j) = DestNode
         j = j + 1
       End If
-      If (arrBranchCopy(i, 4) = 0) And (arrBranchCopy(i, 3) <> 0) Then
-        arrBranchCopy(i, 3) = 0
-        j = j + 1
-      End If
+    Next i
+  End If
+  On Error GoTo 0
+
+  Dim PowerNode, e As Long
+  Dim SecondNode As Long
+  Dim Elem(), n_node, n_branch
+  l = 0
+
+  ' Подготовим номера питающих узлов и первую ветвь присоединения до них
+  NodeBranch = Find_Branch_By_Node(arrBranchCopy2, RootNode)
+  For i = 0 To UBound(list)
+    PowerNode = list(i)
+    ' Найдем номер(а) элементов, в которые входят RootNode и PowerNode, если к питающему узлу удет не одна цепь
+    ' этих элементов может быть несколько
+    Elem = Find_Element_By_2Node(arrBranchCopy, RootNode, PowerNode)
+    On Error Resume Next
+    n = UBound(Elem)
+    If err = 0 Then
+      ' Найдем среди присоединений RootNode присоединение с элементом Elem
+      For j = 0 To n
+        e = Elem(j)
+        For k = LBound(NodeBranch) To UBound(NodeBranch)
+          If arrBranchCopy2(NodeBranch(k), 5) = e Then
+            If arrBranchCopy2(NodeBranch(k), 3) = RootNode Then
+              SecondNode = arrBranchCopy2(NodeBranch(k), 4)
+            Else
+              SecondNode = arrBranchCopy2(NodeBranch(k), 3)
+            End If
+            n_node = Trim(Find_Node(list(i)))                                       ' ???
+            n_branch = Find_Branch_By_2Node(arrBranch, RootNode, SecondNode)        ' ???
+            n_branch = arrBranch(n_branch, 5)                                       ' ???
+            n_branch = Trim(Find_Element(n_branch))                                 ' ???
+            ' Добавим питающий узел и первую ветвь до него в arrPowerNodes()
+            ReDim Preserve arrPowerNodes(l)
+            arrPowerNodes(l) = Array(PowerNode, RootNode, SecondNode)
+            l = l + 1
+          End If
+        Next
+      Next
     End If
   Next
-Loop While j > 0
-
-' Ищем противоположные узлы
-Dim list()
-Dim NodeBranch()
-Dim DestNode As Long
-Dim R As Boolean
-
-j = 0
-NodeBranch = Find_Branch_By_Node(arrBranchCopy, RootNode)
-On Error Resume Next
-n = UBound(NodeBranch)
-If err = 0 Then
-  For i = 0 To n
-    If arrBranchCopy(NodeBranch(i), 3) = RootNode Then
-      DestNode = arrBranchCopy(NodeBranch(i), 4)
-    Else
-      DestNode = arrBranchCopy(NodeBranch(i), 3)
-    End If
-    ' Не добавляем дубликаты, которые могут появиться из за шутнирования СВ линиями (кольца)
-    If (Array_Exists(list, DestNode) = -1) And (DestNode <> 0) Then
-      ReDim Preserve list(j)
-      list(j) = DestNode
-      j = j + 1
-    End If
-  Next i
-End If
-On Error GoTo 0
-
-Dim PowerNode, e As Long
-Dim SecondNode As Long
-Dim Elem(), n_node, n_branch
-l = 0
-
-' Подготовим номера питающих узлов и первую ветвь присоединения до них
-NodeBranch = Find_Branch_By_Node(arrBranchCopy2, RootNode)
-For i = 0 To UBound(list)
-  PowerNode = list(i)
-  ' Найдем номер(а) элементов, в которые входят RootNode и PowerNode, если к питающему узлу удет не одна цепь
-  ' этих элементов может быть несколько
-  Elem = Find_Element_By_2Node(arrBranchCopy, RootNode, PowerNode)
-  On Error Resume Next
-  n = UBound(Elem)
-  If err = 0 Then
-    ' Найдем среди присоединений RootNode присоединение с элементом Elem
-    For j = 0 To n
-      e = Elem(j)
-      For k = LBound(NodeBranch) To UBound(NodeBranch)
-        If arrBranchCopy2(NodeBranch(k), 5) = e Then
-          If arrBranchCopy2(NodeBranch(k), 3) = RootNode Then
-            SecondNode = arrBranchCopy2(NodeBranch(k), 4)
-          Else
-            SecondNode = arrBranchCopy2(NodeBranch(k), 3)
-          End If
-          n_node = Trim(Find_Node(list(i)))                                       ' ???
-          n_branch = Find_Branch_By_2Node(arrBranch, RootNode, SecondNode)        ' ???
-          n_branch = arrBranch(n_branch, 5)                                       ' ???
-          n_branch = Trim(Find_Element(n_branch))                                 ' ???
-          ' Добавим питающий узел и первую ветвь до него в arrPowerNodes()
-          ReDim Preserve arrPowerNodes(l)
-          arrPowerNodes(l) = Array(PowerNode, RootNode, SecondNode)
-          l = l + 1
-        End If
-      Next
-    Next
-  End If
-Next
 
 End Sub
 
@@ -815,7 +819,109 @@ Private Function Get_Testing_Code() As String
 ' подрежимы в которых отключаем по одному присоединению питающего узла
 '
 
+Dim R As String
+Dim i, j, k As Long
 
+R = _
+"*         ПРОВЕРКА ЧУВСТВИТЕЛЬНОСТИ ДЗШ ПРИ ОПРОБОВАНИИ, УЗЕЛ " & RootNode & " [" & Find_Node(RootNode) & "]" & vbCrLf & _
+"ВЕЛИЧИНА  IA IB IC" & vbCrLf & _
+"1-ПОЯС    " & RootNode & vbTab & "/* " & Find_Node(RootNode) & vbCrLf & _
+"СНСМ      1" & vbCrLf & _
+"ЗАМ-ФАЗ   " & RootNode & "/ABC" & vbCrLf & _
+"СНСМ      2" & vbCrLf & _
+"ЗАМ-ФАЗ   " & RootNode & "/AB" & vbCrLf & _
+"СНСМ      3" & vbCrLf & _
+"ЗАМ-ФАЗ   " & RootNode & "/AB0" & vbCrLf & _
+"СНСМ      4" & vbCrLf & _
+"ЗАМ-ФАЗ   " & RootNode & "/A0" & vbCrLf
+
+Dim BaseRejim, Podrejim As Long
+Dim PowerNode, NodeA, NodeB, CrossNode, T As Long
+Dim branchNo As Long
+Dim ElemName As String
+Dim NodeBranch()
+Dim Elem, rElem As Long
+Dim Collision As Boolean
+
+Podrejim = 1
+' Проходим по всем присоединениям, указанным в списке (присоединения к питающему узлу)
+For i = 0 To UBound(arrPowerNodes)
+   PowerNode = arrPowerNodes(i)(0)
+   NodeA = arrPowerNodes(i)(1) ' RootNode
+   NodeB = arrPowerNodes(i)(2) ' номер противоположного узла первой ветви присоединения к питающему узлу
+   R = R & vbCrLf
+   R = R & "ПОДРЕЖИМ  " & Podrejim & " /* " & PowerNode & " (" & Find_Node(PowerNode) & ")" & vbCrLf
+   BaseRejim = Podrejim
+   ' Запишем название базового режима, чтобы можно было это вписать в результирующий лист,
+   ' из протокола эту информацию не достать
+   ReDim Preserve arrBaseRejims(i)
+   branchNo = Find_Branch_By_2Node(arrBranch, NodeA, NodeB)
+   ElemName = Find_Element(arrBranch(branchNo, 5))
+   arrBaseRejims(i) = Array(BaseRejim, Find_Node(PowerNode) & " (" & ElemName & ")")
+      
+   ' Пройдемся по всем отключаемым от ДЗШ присоединениям (задается пользователем после 1 шага)
+   For j = 0 To UBound(arrRootBranch)
+     ' Для ветвей, отходящих от RootNode найдем номер противоположного узла
+     If arrBranch(arrRootBranch(j), 3) = RootNode Then
+       CrossNode = arrBranch(arrRootBranch(j), 4)
+     Else
+       CrossNode = arrBranch(arrRootBranch(j), 3)
+     End If
+     ' Отключаем все присоединения, кроме ведущего к питающему узлу
+     If CrossNode = NodeB Then
+       ' Для справки выводим коммутацию в комментарии
+       R = R & "*"
+     End If
+     R = R & "ОТКЛ      *" & RootNode & "-" & CrossNode & _
+     "      /* Элемент " & arrBranch(arrRootBranch(j), 5) & " (" & _
+     Find_Element(arrBranch(arrRootBranch(j), 5)) & "), Ветвь (" & _
+     Find_Node(arrBranch(arrRootBranch(j), 3)) & " - " & Find_Node(arrBranch(arrRootBranch(j), 4)) & _
+     ")" & vbCrLf
+   Next
+   
+   ' Найдем все присоединения питающего узла и отключим каждое в отдельном подрежиме, основанном на BaseRejim
+   NodeBranch = Find_Branch_By_Node(arrBranch, PowerNode)
+   For j = 0 To UBound(NodeBranch)
+     T = arrBranch(NodeBranch(j), 1)
+     If T <> 101 Then
+       Podrejim = Podrejim + 1
+       R = R & "ПОДРЕЖИМ  " & Podrejim & " " & BaseRejim & vbCrLf
+       NodeA = arrBranch(NodeBranch(j), 3)
+       NodeB = arrBranch(NodeBranch(j), 4)
+       
+       ' Issue#2: Проверим, что ветвь, отходящая от питающего узла, котороую мы хотим отключить,
+       ' не ведет к RootNode (все ветви RootNode кроме одной отключены в базовом режиме)
+       Elem = arrBranch(NodeBranch(j), 5)  ' Номер элемента той ветви от PowerNode, которую хотим отключить
+       Collision = False
+       For k = 0 To UBound(arrRootBranch)
+         rElem = arrBranch(arrRootBranch(k), 5)
+         If Elem = rElem Then
+           Collision = True
+           Exit For
+         End If
+       Next
+       
+       If Not Collision Then
+         If NodeA = PowerNode Then
+           CrossNode = NodeB
+         Else
+           CrossNode = NodeA
+         End If
+         If Elem = 0 Then
+           R = R & "ОТКЛ      *" & PowerNode & "-" & CrossNode & _
+             " /* " & Find_Node(PowerNode) & " - " & Find_Node(CrossNode) & vbCrLf
+         Else
+           R = R & "ЭЛЕМЕНТ   " & Elem & _
+             " /* " & Find_Element(Elem) & vbCrLf
+         End If
+       End If
+     End If
+   Next
+   Podrejim = Podrejim + 1
+   
+Next
+
+Get_Testing_Code = R
 
 End Function
 
@@ -843,7 +949,7 @@ Public Sub Raschet_DZSH()
   End If
 
   ' Инициализация, выбираем данные из листов
-  Initialize
+  Call Initialize
 
   ' Получаем номер узла (вообще-то узел может быть не только числовой)
   Dim Answer
@@ -901,6 +1007,10 @@ Public Sub Raschet_DZSH()
   ' Готовим приказ для проверки опробования
   Call Find_Power_Nodes
 
-
+  CommandsText = Get_Testing_Code()
+  
+  Dim d As New DataObject
+  d.SetText (CommandsText)
+  d.PutInClipboard
 
 End Sub
