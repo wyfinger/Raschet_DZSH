@@ -1,38 +1,24 @@
 Attribute VB_Name = "Raschet_DZSH"
 Option Explicit
 
-Private Declare Function FindWindow Lib "user32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As Long
-Private Declare Function PostMessage Lib "user32" Alias "PostMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
 Private Declare Function SendMessage Lib "user32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
-Private Declare Function GetMenu Lib "user32" (ByVal hwnd As Long) As Long
-Private Declare Function GetSubMenu Lib "user32" (ByVal hMenu As Long, ByVal nPos As Long) As Long
-Private Declare Function GetMenuItemID Lib "user32" (ByVal hMenu As Long, ByVal nPos As Long) As Long
 Private Declare Function GetWindow Lib "user32" (ByVal hwnd As Long, ByVal uCmd As Long) As Long
 Private Declare Function GetClassName Lib "user32.dll" Alias "GetClassNameA" (ByVal hwnd As Long, ByVal lpClassName As String, ByVal nMaxCount As Long) As Long
 Private Declare Function GetWindowThreadProcessId Lib "user32.dll" (ByVal hwnd As Long, lpdwProcessId As Long) As Long
 Private Declare Function OpenProcess Lib "kernel32" (ByVal dwDesiredAcess As Long, ByVal bInheritHandle As Long, ByVal dwProcessId As Long) As Long
 Private Declare Function CloseHandle Lib "kernel32" (ByVal hObject As Long) As Long
-Private Declare Function EnumProcessModules Lib "PSAPI.DLL" (ByVal hProcess As Long, ByRef lphModule As Long, ByVal cb As Long, ByRef cbNeeded As Long) As Long
 Private Declare Function GetModuleFileNameEx Lib "PSAPI.DLL" Alias "GetModuleFileNameExA" (ByVal hProcess As Long, ByVal hModule As Long, ByVal lpFilename As String, ByVal nSize As Long) As Long
 Private Declare Function IsWindowVisible Lib "user32" (ByVal hwnd As Long) As Long
 Private Declare Function GetParent Lib "user32" (ByVal hwnd As Long) As Long
 Private Declare Function EnumWindows Lib "user32" (ByVal lpEnumFunc As Long, ByVal lParam As Long) As Long
-Private Declare Function GetForegroundWindow Lib "user32.dll" () As Long
-Private Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
-Private Const PROCESS_QUERY_INFORMATION = 1024
-Private Const PROCESS_VM_READ = 16
+
 Private Const WM_COMMAND = &H111
 Private Const WM_PASTE = &H302
-Private Const WM_COPY = &H301
 Private Const WM_CUT = &H300
 Private Const GW_CHILD = &H5
-Private Const GW_OWNER = &H4
 Private Const GW_HWNDNEXT = &H2
 Private Const EM_SETSEL = &HB1
-Private Const EM_REPLACESEL = &HC2
-Private Const WM_SETTEXT = &HC
 Private Const PROCESS_ALL_ACCESS = &H1F0FFF
-Private Const MAX_PATH As Long = 260
 
 Dim GT_Class As String       ' Временная переменная класса для передачи в Enum-функцию
 Dim GT_Result As Long
@@ -51,11 +37,6 @@ Dim arrPowerNodes()          ' Массив питающих узлов (узе�
 Dim arrBaseRejims()          ' Массив базовых режимов для проверки чувствительности,
                              ' заполняется при подготовке приказа в Get_Testing_Code()
                              ' т.к. из протокола расчета эту инфу не получить
-                             
-                             
-Dim arrTrueBrach()           ' Список присоединений узла, кроме неотключаемых
-          ' НОМЕР, Название для базовых режимов, нужно при парсинге протокола по опробованию
-Const vbTab = "   "          ' Этот дебильный АРМ затыкается на некоторых приказах с табом
 
 
 '##########################################################################[ Функции взаимодействия с окнами ]
@@ -219,7 +200,7 @@ Private Function Window_Get_Text(hwnd As Long)
 
 
 SendMessage hwnd, EM_SETSEL, 0, -1
-SendMessage hwnd, WM_COPY, 0, 0
+SendMessage hwnd, WM_CUT, 0, 0
 
 ' Копируем приказ в буфер
 Dim d As New DataObject
@@ -449,7 +430,7 @@ Private Function Get_Sensitivity_Code() As String
   R = _
 "*         ПРОВЕРКА ЧУВСТВИТЕЛЬНОСТИ ДЗШ, УЗЕЛ " & RootNode & " [" & Find_Node(RootNode) & "]" & vbCrLf & _
 "ВЕЛИЧИНА  IA IB IC" & vbCrLf & _
-"1-ПОЯС    " & RootNode & vbTab & "/* " & Find_Node(RootNode) & vbCrLf & _
+"1-ПОЯС    " & RootNode & "      /* " & Find_Node(RootNode) & vbCrLf & _
 "СНСМ      1" & vbCrLf & _
 "ЗАМ-ФАЗ   " & RootNode & "/ABC" & vbCrLf & _
 "СНСМ      2" & vbCrLf & _
@@ -698,7 +679,7 @@ Private Sub Find_Power_Nodes()
 ' Поиск питающих узлов для RootNode
 '
 
-  Dim i, j, n, k, l, kn As Long
+  Dim i, j, n, k, l As Long
 
   ' Удаляем сразу ветви с 101 типом (отключенный ШСВ)
   For i = 1 To UBound(arrBranchCopy)
@@ -825,7 +806,7 @@ Dim i, j, k As Long
 R = _
 "*         ПРОВЕРКА ЧУВСТВИТЕЛЬНОСТИ ДЗШ ПРИ ОПРОБОВАНИИ, УЗЕЛ " & RootNode & " [" & Find_Node(RootNode) & "]" & vbCrLf & _
 "ВЕЛИЧИНА  IA IB IC" & vbCrLf & _
-"1-ПОЯС    " & RootNode & vbTab & "/* " & Find_Node(RootNode) & vbCrLf & _
+"1-ПОЯС    " & RootNode & "      /* " & Find_Node(RootNode) & vbCrLf & _
 "СНСМ      1" & vbCrLf & _
 "ЗАМ-ФАЗ   " & RootNode & "/ABC" & vbCrLf & _
 "СНСМ      2" & vbCrLf & _
@@ -1022,7 +1003,7 @@ objRez.Cells(s, 5).Value = "КЗ(1)"
 Dim list()
 Dim j As Long
 Dim StartPos As Long
-Dim R, RejimName As String
+Dim RejimName As String
 Dim Line
 j = 0
 
