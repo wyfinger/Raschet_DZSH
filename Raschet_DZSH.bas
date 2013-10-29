@@ -428,21 +428,22 @@ Private Function Get_Sensitivity_Code() As String
   Dim R As String
 
   R = _
-"*         ПРОВЕРКА ЧУВСТВИТЕЛЬНОСТИ ДЗШ, УЗЕЛ " & RootNode & " [" & Find_Node(RootNode) & "]" & vbCrLf & _
-"ВЕЛИЧИНА  IA IB IC" & vbCrLf & _
-"1-ПОЯС    " & RootNode & "      /* " & Find_Node(RootNode) & vbCrLf & _
-"СНСМ      1" & vbCrLf & _
-"ЗАМ-ФАЗ   " & RootNode & "/ABC" & vbCrLf & _
-"СНСМ      2" & vbCrLf & _
-"ЗАМ-ФАЗ   " & RootNode & "/AB" & vbCrLf & _
-"СНСМ      3" & vbCrLf & _
-"ЗАМ-ФАЗ   " & RootNode & "/AB0" & vbCrLf & _
-"СНСМ      4" & vbCrLf & _
-"ЗАМ-ФАЗ   " & RootNode & "/A0" & vbCrLf & _
-"ПОДРЕЖИМ  1    /* ВСЕ ВКЛЮЧЕНО" & vbCrLf
+    "*         ПРОВЕРКА ЧУВСТВИТЕЛЬНОСТИ ДЗШ, УЗЕЛ " & RootNode & " [" & Find_Node(RootNode) & "]" & vbCrLf & _
+    "ВЕЛИЧИНА  IA IB IC" & vbCrLf & _
+    "1-ПОЯС    " & RootNode & "      /* " & Find_Node(RootNode) & vbCrLf & _
+    "СНСМ      1" & vbCrLf & _
+    "ЗАМ-ФАЗ   " & RootNode & "/ABC" & vbCrLf & _
+    "СНСМ      2" & vbCrLf & _
+    "ЗАМ-ФАЗ   " & RootNode & "/AB" & vbCrLf & _
+    "СНСМ      3" & vbCrLf & _
+    "ЗАМ-ФАЗ   " & RootNode & "/AB0" & vbCrLf & _
+    "СНСМ      4" & vbCrLf & _
+    "ЗАМ-ФАЗ   " & RootNode & "/A0" & vbCrLf & _
+    "ПОДРЕЖИМ  1    /* ВСЕ ВКЛЮЧЕНО" & vbCrLf
 
   Dim CrossNode As Long
   Dim ElemNo As Long
+  Dim BranchType As Long
   Dim ElemName As String
   Dim NewStr As String
   Dim i As Long
@@ -456,15 +457,19 @@ Private Function Get_Sensitivity_Code() As String
       CrossNode = arrBranch(arrRootBranch(i), 3)
     End If
     ElemNo = arrBranch(arrRootBranch(i), 5)
-    ElemName = Find_Element(ElemNo)
-    If (CrossNode = 0) Or (ElemNo = 0) Then               ' отключаем ветвь
-      NewStr = "ПОДРЕЖИМ  " & (i + 2) & vbCrLf & _
-      "ОТКЛ      0 *" & RootNode & "-" & CrossNode & "      /* НЕЙТРАЛЬ ?"
-    Else                                                  ' отключаем элемент
-      NewStr = "ПОДРЕЖИМ  " & (i + 2) & vbCrLf & _
-      "ЭЛЕМЕНТ   " & ElemNo & "      /* " & ElemName
+    BranchType = arrBranch(arrRootBranch(i), 1)
+    ' Issue#8: Незачем отключать отключенные ШСВ
+    If BranchType <> 101 Then
+      ElemName = Find_Element(ElemNo)
+      If (CrossNode = 0) Or (ElemNo = 0) Then               ' отключаем ветвь
+        NewStr = "ПОДРЕЖИМ  " & (i + 2) & vbCrLf & _
+        "ОТКЛ      0 *" & RootNode & "-" & CrossNode & "      /* НЕЙТРАЛЬ ?"
+      Else                                                  ' отключаем элемент
+        NewStr = "ПОДРЕЖИМ  " & (i + 2) & vbCrLf & _
+        "ЭЛЕМЕНТ   " & ElemNo & "      /* " & ElemName
+      End If
+      R = R & NewStr & vbCrLf
     End If
-    R = R & NewStr & vbCrLf
   Next
 
   Get_Sensitivity_Code = R
@@ -800,107 +805,107 @@ Private Function Get_Testing_Code() As String
 ' подрежимы в которых отключаем по одному присоединению питающего узла
 '
 
-Dim R As String
-Dim i, j, k As Long
+  Dim R As String
+  Dim i, j, k As Long
 
-R = _
-"*         ПРОВЕРКА ЧУВСТВИТЕЛЬНОСТИ ДЗШ ПРИ ОПРОБОВАНИИ, УЗЕЛ " & RootNode & " [" & Find_Node(RootNode) & "]" & vbCrLf & _
-"ВЕЛИЧИНА  IA IB IC" & vbCrLf & _
-"1-ПОЯС    " & RootNode & "      /* " & Find_Node(RootNode) & vbCrLf & _
-"СНСМ      1" & vbCrLf & _
-"ЗАМ-ФАЗ   " & RootNode & "/ABC" & vbCrLf & _
-"СНСМ      2" & vbCrLf & _
-"ЗАМ-ФАЗ   " & RootNode & "/AB" & vbCrLf & _
-"СНСМ      3" & vbCrLf & _
-"ЗАМ-ФАЗ   " & RootNode & "/AB0" & vbCrLf & _
-"СНСМ      4" & vbCrLf & _
-"ЗАМ-ФАЗ   " & RootNode & "/A0" & vbCrLf
+  R = _
+    "*         ПРОВЕРКА ЧУВСТВИТЕЛЬНОСТИ ДЗШ ПРИ ОПРОБОВАНИИ, УЗЕЛ " & RootNode & " [" & Find_Node(RootNode) & "]" & vbCrLf & _
+    "ВЕЛИЧИНА  IA IB IC" & vbCrLf & _
+    "1-ПОЯС    " & RootNode & "      /* " & Find_Node(RootNode) & vbCrLf & _
+    "СНСМ      1" & vbCrLf & _
+    "ЗАМ-ФАЗ   " & RootNode & "/ABC" & vbCrLf & _
+    "СНСМ      2" & vbCrLf & _
+    "ЗАМ-ФАЗ   " & RootNode & "/AB" & vbCrLf & _
+    "СНСМ      3" & vbCrLf & _
+    "ЗАМ-ФАЗ   " & RootNode & "/AB0" & vbCrLf & _
+    "СНСМ      4" & vbCrLf & _
+    "ЗАМ-ФАЗ   " & RootNode & "/A0" & vbCrLf
 
-Dim BaseRejim, Podrejim As Long
-Dim PowerNode, NodeA, NodeB, CrossNode, T As Long
-Dim branchNo As Long
-Dim ElemName As String
-Dim NodeBranch()
-Dim Elem, rElem As Long
-Dim Collision As Boolean
+  Dim BaseRejim, Podrejim As Long
+  Dim PowerNode, NodeA, NodeB, CrossNode, T As Long
+  Dim branchNo As Long
+  Dim ElemName As String
+  Dim NodeBranch()
+  Dim Elem, rElem As Long
+  Dim Collision As Boolean
 
-Podrejim = 1
-' Проходим по всем присоединениям, указанным в списке (присоединения к питающему узлу)
-For i = 0 To UBound(arrPowerNodes)
-   PowerNode = arrPowerNodes(i)(0)
-   NodeA = arrPowerNodes(i)(1) ' RootNode
-   NodeB = arrPowerNodes(i)(2) ' номер противоположного узла первой ветви присоединения к питающему узлу
-   R = R & vbCrLf
-   R = R & "ПОДРЕЖИМ  " & Podrejim & " /* " & PowerNode & " (" & Find_Node(PowerNode) & ")" & vbCrLf
-   BaseRejim = Podrejim
-   ' Запишем название базового режима, чтобы можно было это вписать в результирующий лист,
-   ' из протокола эту информацию не достать
-   ReDim Preserve arrBaseRejims(i)
-   branchNo = Find_Branch_By_2Node(arrBranch, NodeA, NodeB)
-   ElemName = Find_Element(arrBranch(branchNo, 5))
-   arrBaseRejims(i) = Array(BaseRejim, Find_Node(PowerNode) & " (" & ElemName & ")")
+  Podrejim = 1
+  ' Проходим по всем присоединениям, указанным в списке (присоединения к питающему узлу)
+  For i = 0 To UBound(arrPowerNodes)
+    PowerNode = arrPowerNodes(i)(0)
+    NodeA = arrPowerNodes(i)(1) ' RootNode
+    NodeB = arrPowerNodes(i)(2) ' номер противоположного узла первой ветви присоединения к питающему узлу
+    R = R & vbCrLf
+    R = R & "ПОДРЕЖИМ  " & Podrejim & " /* " & PowerNode & " (" & Find_Node(PowerNode) & ")" & vbCrLf
+    BaseRejim = Podrejim
+    ' Запишем название базового режима, чтобы можно было это вписать в результирующий лист,
+    ' из протокола эту информацию не достать
+    ReDim Preserve arrBaseRejims(i)
+    branchNo = Find_Branch_By_2Node(arrBranch, NodeA, NodeB)
+    ElemName = Find_Element(arrBranch(branchNo, 5))
+    arrBaseRejims(i) = Array(BaseRejim, Find_Node(PowerNode) & " (" & ElemName & ")")
       
-   ' Пройдемся по всем отключаемым от ДЗШ присоединениям (задается пользователем после 1 шага)
-   For j = 0 To UBound(arrRootBranch)
-     ' Для ветвей, отходящих от RootNode найдем номер противоположного узла
-     If arrBranch(arrRootBranch(j), 3) = RootNode Then
-       CrossNode = arrBranch(arrRootBranch(j), 4)
-     Else
-       CrossNode = arrBranch(arrRootBranch(j), 3)
-     End If
-     ' Отключаем все присоединения, кроме ведущего к питающему узлу
-     If CrossNode = NodeB Then
-       ' Для справки выводим коммутацию в комментарии
-       R = R & "*"
-     End If
-     R = R & "ОТКЛ      *" & RootNode & "-" & CrossNode & _
-     "      /* Элемент " & arrBranch(arrRootBranch(j), 5) & " (" & _
-     Find_Element(arrBranch(arrRootBranch(j), 5)) & "), Ветвь (" & _
-     Find_Node(arrBranch(arrRootBranch(j), 3)) & " - " & Find_Node(arrBranch(arrRootBranch(j), 4)) & _
-     ")" & vbCrLf
-   Next
-   
-   ' Найдем все присоединения питающего узла и отключим каждое в отдельном подрежиме, основанном на BaseRejim
-   NodeBranch = Find_Branch_By_Node(arrBranch, PowerNode)
-   For j = 0 To UBound(NodeBranch)
-     T = arrBranch(NodeBranch(j), 1)
-     
-     ' Issue#2: Проверим, что ветвь, отходящая от питающего узла, котороую мы хотим отключить,
-     ' не ведет к RootNode (все ветви RootNode кроме одной отключены в базовом режиме)
-     Elem = arrBranch(NodeBranch(j), 5)  ' Номер элемента той ветви от PowerNode, которую хотим отключить
-     Collision = False
-     For k = 0 To UBound(arrRootBranch)
-       rElem = arrBranch(arrRootBranch(k), 5)
-       If Elem = rElem Then
-         Collision = True
-         Exit For
-       End If
-     Next
-     
-     If (T <> 101) And Not Collision Then
-       Podrejim = Podrejim + 1
-       R = R & "ПОДРЕЖИМ  " & Podrejim & " " & BaseRejim & vbCrLf
-       NodeA = arrBranch(NodeBranch(j), 3)
-       NodeB = arrBranch(NodeBranch(j), 4)
-              
-       If NodeA = PowerNode Then
-         CrossNode = NodeB
-       Else
-         CrossNode = NodeA
-       End If
+    ' Пройдемся по всем присоединениям RootNode
+    For j = 0 To UBound(arrRootBranch)
+      ' Для ветвей, отходящих от RootNode найдем номер противоположного узла
+      If arrBranch(arrRootBranch(j), 3) = RootNode Then
+        CrossNode = arrBranch(arrRootBranch(j), 4)
+      Else
+        CrossNode = arrBranch(arrRootBranch(j), 3)
+      End If
+      ' Отключаем все присоединения, кроме ведущего к питающему узлу
+      If CrossNode = NodeB Then
+        ' Для справки выводим коммутацию в комментарии
+        R = R & "*"
+      End If
+      R = R & "ОТКЛ      *" & RootNode & "-" & CrossNode & _
+      "      /* Элемент " & arrBranch(arrRootBranch(j), 5) & " (" & _
+      Find_Element(arrBranch(arrRootBranch(j), 5)) & "), Ветвь (" & _
+      Find_Node(arrBranch(arrRootBranch(j), 3)) & " - " & Find_Node(arrBranch(arrRootBranch(j), 4)) & _
+      ")" & vbCrLf
+    Next
+    
+    ' Найдем все присоединения питающего узла и отключим каждое в отдельном подрежиме, основанном на BaseRejim
+    NodeBranch = Find_Branch_By_Node(arrBranch, PowerNode)
+    For j = 0 To UBound(NodeBranch)
+      T = arrBranch(NodeBranch(j), 1)
       
-       If Elem = 0 Then
-         R = R & "ОТКЛ      *" & PowerNode & "-" & CrossNode & _
-         " /* " & Find_Node(PowerNode) & " - " & Find_Node(CrossNode) & vbCrLf
-       Else
-         R = R & "ЭЛЕМЕНТ   " & Elem & _
-         " /* " & Find_Element(Elem) & vbCrLf
-       End If
-     End If
-     
-   Next
-   Podrejim = Podrejim + 1
-Next
+      ' Issue#2: Проверим, что ветвь, отходящая от питающего узла, котороую мы хотим отключить,
+      ' не ведет к RootNode (все ветви RootNode кроме одной отключены в базовом режиме)
+      Elem = arrBranch(NodeBranch(j), 5)  ' Номер элемента той ветви от PowerNode, которую хотим отключить
+      Collision = False
+      For k = 0 To UBound(arrRootBranch)
+        rElem = arrBranch(arrRootBranch(k), 5)
+        If Elem = rElem Then
+          Collision = True
+          Exit For
+        End If
+      Next
+      ' Issue#8: Незачем отключать отключенные ШСВ
+      If (T <> 101) And Not Collision Then
+        Podrejim = Podrejim + 1
+        R = R & "ПОДРЕЖИМ  " & Podrejim & " " & BaseRejim & vbCrLf
+        NodeA = arrBranch(NodeBranch(j), 3)
+        NodeB = arrBranch(NodeBranch(j), 4)
+               
+        If NodeA = PowerNode Then
+          CrossNode = NodeB
+        Else
+          CrossNode = NodeA
+        End If
+      
+        If Elem = 0 Then
+          R = R & "ОТКЛ      *" & PowerNode & "-" & CrossNode & _
+          " /* " & Find_Node(PowerNode) & " - " & Find_Node(CrossNode) & vbCrLf
+        Else
+          R = R & "ЭЛЕМЕНТ   " & Elem & _
+          " /* " & Find_Element(Elem) & vbCrLf
+        End If
+      End If
+    Next
+    
+    Podrejim = Podrejim + 1
+  Next
 
 Get_Testing_Code = R
 
@@ -913,16 +918,16 @@ Private Function Is_Sub_Rejim(Protokol, CurPos)
 ' (ремонт или отключение на питающем узле)
 '
 
-Dim apos, bpos, cpos As Long
+  Dim apos, bpos, cpos As Long
 
-Is_Sub_Rejim = False
-apos = InStr(CurPos, Protokol, "Подрежим  ")
+  Is_Sub_Rejim = False
+  apos = InStr(CurPos, Protokol, "Подрежим  ")
 
-If apos > 0 Then
-  bpos = InStr(apos + 10, Protokol, " ")
-  cpos = InStr(apos + 10, Protokol, vbCrLf)
-  If cpos > bpos Then Is_Sub_Rejim = True
-End If
+  If apos > 0 Then
+    bpos = InStr(apos + 10, Protokol, " ")
+    cpos = InStr(apos + 10, Protokol, vbCrLf)
+    If cpos > bpos Then Is_Sub_Rejim = True
+  End If
 
 End Function
 
@@ -932,15 +937,15 @@ Private Function Find_BaseRejim_Name(RejimNo)
 ' Ищем наименование режима из базовых режимов в arrBaseRejims()
 '
 
-Dim i As Long
+  Dim i As Long
 
-Find_BaseRejim_Name = ""
-For i = 0 To UBound(arrBaseRejims)
-  If arrBaseRejims(i)(0) = Int(RejimNo) Then
-    Find_BaseRejim_Name = arrBaseRejims(i)(1)
-    Exit For
-  End If
-Next
+  Find_BaseRejim_Name = ""
+  For i = 0 To UBound(arrBaseRejims)
+    If arrBaseRejims(i)(0) = Int(RejimNo) Then
+      Find_BaseRejim_Name = arrBaseRejims(i)(1)
+      Exit For
+    End If
+  Next
 
 End Function
 
@@ -951,30 +956,30 @@ Private Function Get_Rejim_Name(Protokol, CurPos)
 ' если это субрежим - берем наименование отключаемого элемента
 '
 
-Dim apos, bpos As Long
-Dim Prefix As String
+  Dim apos, bpos As Long
+  Dim Prefix As String
 
-' Найдем номер режима, если это подрежим - номер состоит из двух чисел,
-' если основной - одного
-apos = InStr(CurPos, Protokol, "Подрежим")
-bpos = InStr(apos, Protokol, vbCrLf)
-If (apos > 0) And (bpos > apos) Then
-  Prefix = Trim(Mid(Protokol, apos + 8, bpos - apos - 8))
-End If
-
-apos = 0
-bpos = 0
-
-If Is_Sub_Rejim(Protokol, CurPos) Then
-  apos = InStr(CurPos, Protokol, "(")
-  bpos = InStr(apos, Protokol, ")")
+  ' Найдем номер режима, если это подрежим - номер состоит из двух чисел,
+  ' если основной - одного
+  apos = InStr(CurPos, Protokol, "Подрежим")
+  bpos = InStr(apos, Protokol, vbCrLf)
   If (apos > 0) And (bpos > apos) Then
-    Get_Rejim_Name = "+Откл " & Trim(Mid(Protokol, apos + 1, bpos - apos - 1))
+    Prefix = Trim(Mid(Protokol, apos + 8, bpos - apos - 8))
   End If
-Else
-  apos = InStr(CurPos + 10, Protokol, vbCrLf)
-  Get_Rejim_Name = "[" & Prefix & "] " & Find_BaseRejim_Name(Trim(Mid(Protokol, CurPos + 10, apos - (CurPos + 10))))
-End If
+
+  apos = 0
+  bpos = 0
+
+  If Is_Sub_Rejim(Protokol, CurPos) Then
+    apos = InStr(CurPos, Protokol, "(")
+    bpos = InStr(apos, Protokol, ")")
+    If (apos > 0) And (bpos > apos) Then
+      Get_Rejim_Name = "+Откл " & Trim(Mid(Protokol, apos + 1, bpos - apos - 1))
+    End If
+  Else
+    apos = InStr(CurPos + 10, Protokol, vbCrLf)
+    Get_Rejim_Name = "[" & Prefix & "] " & Find_BaseRejim_Name(Trim(Mid(Protokol, CurPos + 10, apos - (CurPos + 10))))
+  End If
   
 End Function
 
@@ -984,51 +989,51 @@ Private Sub Analiz_Testing(Protokol As String)
 ' Парсинг протокола по опробованию
 '
 
-Dim objWorkbook, objRez
-Dim s, i As Long
+  Dim objWorkbook, objRez
+  Dim s, i As Long
 
-' Результаты быдем выводить в тот же лист, что и результаты по проверке чувствительности
-' в минимальном режиме
-Set objWorkbook = ActiveWorkbook
-Set objRez = objWorkbook.ActiveSheet
-s = objRez.UsedRange.Rows.Count + 2
+  ' Результаты быдем выводить в тот же лист, что и результаты по проверке чувствительности
+  ' в минимальном режиме
+  Set objWorkbook = ActiveWorkbook
+  Set objRez = objWorkbook.ActiveSheet
+  s = objRez.UsedRange.Rows.Count + 2
 
-objRez.Cells(s, 1).Value = "ТКЗ для опробования"
-objRez.Cells(s, 2).Value = "КЗ(3)"
-objRez.Cells(s, 3).Value = "КЗ(2)"
-objRez.Cells(s, 4).Value = "КЗ(1+1)"
-objRez.Cells(s, 5).Value = "КЗ(1)"
+  objRez.Cells(s, 1).Value = "ТКЗ для опробования"
+  objRez.Cells(s, 2).Value = "КЗ(3)"
+  objRez.Cells(s, 3).Value = "КЗ(2)"
+  objRez.Cells(s, 4).Value = "КЗ(1+1)"
+  objRez.Cells(s, 5).Value = "КЗ(1)"
 
-' Пройдемся по подрежимам
-Dim list()
-Dim j As Long
-Dim StartPos As Long
-Dim RejimName As String
-Dim Line
-j = 0
+  ' Пройдемся по подрежимам
+  Dim list()
+  Dim j As Long
+  Dim StartPos As Long
+  Dim RejimName As String
+  Dim Line
+  j = 0
 
-StartPos = InStr(Protokol, "Р Е З У Л Ь Т А Т Ы    Р А С Ч Е Т А")
-StartPos = InStr(StartPos, Protokol, "Подрежим  " & j + 1)
-
-Do
-  ReDim Preserve list(j)
-  RejimName = Get_Rejim_Name(Protokol, StartPos)
-  Line = Parse_Current_Line(Protokol, StartPos, StartPos)
-      
-  list(j) = Array(RejimName, Line)
-  j = j + 1
+  StartPos = InStr(Protokol, "Р Е З У Л Ь Т А Т Ы    Р А С Ч Е Т А")
   StartPos = InStr(StartPos, Protokol, "Подрежим  " & j + 1)
-  DoEvents     ' Для того, чтобы работал выход по  Ctrl+C
-Loop While StartPos > 0
 
-' Массив наименований режимов и соответствующих токов заполнен, переносим его на лист
-objRez.Cells(s, 1).Value = "ТКЗ для режима опробования"
-For i = 0 To UBound(list)
-  objRez.Cells(s + i + 1, 1).Value = list(i)(0)
-  For j = 0 To 3
-    objRez.Cells(s + i + 1, j + 2).Value = list(i)(1)(j + 1)
-  Next j
-Next i
+  Do
+    ReDim Preserve list(j)
+    RejimName = Get_Rejim_Name(Protokol, StartPos)
+    Line = Parse_Current_Line(Protokol, StartPos, StartPos)
+      
+    list(j) = Array(RejimName, Line)
+    j = j + 1
+    StartPos = InStr(StartPos, Protokol, "Подрежим  " & j + 1)
+    DoEvents     ' Для того, чтобы работал выход по  Ctrl+C
+  Loop While StartPos > 0
+
+  ' Массив наименований режимов и соответствующих токов заполнен, переносим его на лист
+  objRez.Cells(s, 1).Value = "ТКЗ для режима опробования"
+  For i = 0 To UBound(list)
+    objRez.Cells(s + i + 1, 1).Value = list(i)(0)
+    For j = 0 To 3
+      objRez.Cells(s + i + 1, j + 2).Value = list(i)(1)(j + 1)
+    Next
+  Next
 
 End Sub
 
