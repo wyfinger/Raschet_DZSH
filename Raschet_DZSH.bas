@@ -1,4 +1,11 @@
 Attribute VB_Name = "Raschet_DZSH"
+'
+' Макрос ДЗШ
+' ~~~~~~~~~~
+' https://github.com/wyfinger/Raschet_DZSH
+' Игорь Матвеев, miv@prim.so-ups.ru
+'
+
 Option Explicit
 
 Private Declare Function SendMessage Lib "user32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
