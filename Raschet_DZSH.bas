@@ -149,13 +149,13 @@ Public Function Find_Window_Enum_Proc(ByVal wnd As Long, ByVal lParam As Long) A
 End Function
 
 
-Private Function Find_TKZ_Window_Handle(ByVal class As String) As Long
+Private Function Find_TKZ_Window_Handle(ByVal Class As String) As Long
 '
 ' Поиск главного окна программы ТКЗ-2000
 '
 
   GT_Result = 0
-  GT_Class = class
+  GT_Class = Class
   Call EnumWindows(AddressOf Find_Window_Enum_Proc, 0)
   Find_TKZ_Window_Handle = GT_Result
 
@@ -192,27 +192,37 @@ End Function
 
 
 Private Function Window_Set_Text(hwnd As Long, sText As String)
+'
+' Установить в поле ввода текст
+'
 
-' Копируем приказ в буфер
-Dim d As New DataObject
+Dim d As Object
+Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
 d.SetText (sText)
 d.PutInClipboard
 
 SendMessage hwnd, EM_SETSEL, 0, -1
 SendMessage hwnd, WM_PASTE, 0, 0
 
+d = Nothing
+
 End Function
 
 Private Function Window_Get_Text(hwnd As Long)
-
+'
+' Забираем текст из поля ввода
+'
 
 SendMessage hwnd, EM_SETSEL, 0, -1
 SendMessage hwnd, WM_CUT, 0, 0
 
 ' Копируем приказ в буфер
-Dim d As New DataObject
+Dim d As Object
+Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
 d.GetFromClipboard
 Window_Get_Text = d.GetText
+
+d = Nothing
 
 End Function
 
