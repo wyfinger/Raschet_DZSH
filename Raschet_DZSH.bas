@@ -221,7 +221,6 @@ Private Sub Initialize()
   Dim wshNode
   Dim wshElement
 
-
   ' 1. Ветви - берем первые пять столбцов страницы 'Таблица ветвей'
   Set wshBranch = ActiveWorkbook.Worksheets("Таблица ветвей")
   arrBranch = wshBranch.Range("A3:K" & wshBranch.UsedRange.Rows.Count).Value2
@@ -253,7 +252,7 @@ Private Function Find_Branch_By_Node(BranchArray, Node)
   Dim i As Integer
   Dim j As Integer
   j = 0
-  For i = 1 To UBound(BranchArray)
+  For i = LBound(BranchArray) To UBound(BranchArray)
     If (Int(BranchArray(i, 3)) = Node) Or (Int(BranchArray(i, 4)) = Node) Then
       ReDim Preserve Rez(j)
       Rez(j) = i
@@ -272,7 +271,7 @@ Private Function Find_Branch_By_2Node(BranchArray, Node1, Node2)
   Dim i, Rez As Integer
   Rez = -1
 
-  For i = 1 To UBound(BranchArray)
+  For i = LBound(BranchArray) To UBound(BranchArray)
     If ((Int(BranchArray(i, 3)) = Node1) And (Int(BranchArray(i, 4)) = Node2)) Or _
        ((Int(BranchArray(i, 3)) = Node2) And (Int(BranchArray(i, 4)) = Node1)) Then
       Find_Branch_By_2Node = i
@@ -289,7 +288,7 @@ Private Function Find_Node(Node)
 '
 
   Dim i As Integer
-  For i = 1 To UBound(arrNode)
+  For i = LBound(arrNode) To UBound(arrNode)
     If Int(arrNode(i, 1)) = Node Then
       Find_Node = Trim(arrNode(i, 2))
       Exit For
@@ -305,7 +304,7 @@ Private Function Find_Node_Index(Node)
 '
 
   Dim i As Integer
-  For i = 1 To UBound(arrNode)
+  For i = LBound(arrNode) To UBound(arrNode)
     If Int(arrNode(i, 1)) = Node Then
       Find_Node_Index = i
       Exit For
@@ -322,7 +321,7 @@ Private Function Node_Exists(Node)
 
   Dim i As Integer
   Node_Exists = False
-  For i = 1 To UBound(arrNode)
+  For i = LBound(arrNode) To UBound(arrNode)
     If Int(arrNode(i, 1)) = Node Then
       Node_Exists = True
       Exit For
@@ -338,7 +337,7 @@ Private Function Find_Element(Element)
 '
 
   Dim i As Integer
-  For i = 1 To UBound(arrElement)
+  For i = LBound(arrElement) To UBound(arrElement)
     If Int(arrElement(i, 1)) = Element Then
       Find_Element = Trim(arrElement(i, 2))
       Exit For
@@ -357,7 +356,7 @@ Private Function Find_Element_By_2Node(Branch, Node1, Node2)
   Dim i, j As Long
   j = 0
 
-  For i = 1 To UBound(Branch)
+  For i = LBound(Branch) To UBound(Branch)
     If ((Branch(i, 3) = Node1) And (Branch(i, 4) = Node2)) Or _
        ((Branch(i, 3) = Node2) And (Branch(i, 4) = Node1)) Then
         ReDim Preserve Rez(j)
@@ -377,7 +376,7 @@ Private Function Find_Branch_Index(Node1, Node2)
 
   Dim i As Integer
   Find_Branch_Index = 0
-  For i = 1 To UBound(arrBranch)
+  For i = LBound(arrBranch) To UBound(arrBranch)
     If ((arrBranch(i, 3) = Node1) And (arrBranch(i, 4) = Node2)) Or _
        ((arrBranch(i, 3) = Node2) And (arrBranch(i, 4) = Node1)) Then
        Find_Branch_Index = i
@@ -450,7 +449,7 @@ Private Function Get_Sensitivity_Code() As String
 
   ' Для каждого из присоединений RootNode создаем подрежим, где отключаем присоединения
   arrRootBranch = Find_Branch_By_Node(arrBranch, RootNode)
-  For i = 0 To UBound(arrRootBranch)
+  For i = LBound(arrRootBranch) To UBound(arrRootBranch)
     If arrBranch(arrRootBranch(i), 3) = RootNode Then
       CrossNode = arrBranch(arrRootBranch(i), 4)
     Else
@@ -587,7 +586,7 @@ Private Sub Analiz_Sensitivity(Protokol As String)
   Loop While StartPos > 0
 
   ' Массив наименований режимов и соответствующих токов заполнен, переносим его на лист
-  For i = 0 To UBound(list)
+  For i = LBound(list) To UBound(list)
     objRez.Cells(i + 3, 1).Value = list(i)(0)
     For j = 0 To 3
       objRez.Cells(i + 3, j + 2).Value = list(i)(1)(j + 1)
@@ -613,7 +612,7 @@ Private Function Delete_Interm_Nodes(Without As Long) As Long
   Dim DestType, DestElement As Long
 
   j = 0
-  For i = 1 To UBound(arrNode)
+  For i = LBound(arrNode) To UBound(arrNode)
     Node = arrNode(i, 1)
     If Node <> Without Then
       NodeBranch = Find_Branch_By_Node(arrBranchCopy, Node)
@@ -687,7 +686,7 @@ Private Sub Find_Power_Nodes()
   Dim i, j, n, k, l As Long
 
   ' Удаляем сразу ветви с 101 типом (отключенный ШСВ)
-  For i = 1 To UBound(arrBranchCopy)
+  For i = LBound(arrBranchCopy) To UBound(arrBranchCopy)
     If arrBranchCopy(i, 1) = 101 Then
       arrBranchCopy(i, 3) = 0
       arrBranchCopy(i, 4) = 0
@@ -702,7 +701,7 @@ Private Sub Find_Power_Nodes()
   ' если один из узлов ветви = RootNode его номер элемента будет распространяться на вновь
   ' образованную ветвь
 
-  For i = 0 To UBound(arrRootBranch)
+  For i = LBound(arrRootBranch) To UBound(arrRootBranch)
     arrBranchCopy(arrRootBranch(i), 5) = i + 1
     arrBranchCopy2(arrRootBranch(i), 5) = i + 1
   Next
@@ -713,8 +712,8 @@ Private Sub Find_Power_Nodes()
     n = Delete_Interm_Nodes(RootNode)
     j = j + n
 
-    ' Удаляем тупики в виде нейтралей и тр-ров на ноль (ТСН) но не генераторы
-    For i = 1 To UBound(arrBranchCopy)
+    ' Удаляем тупики в виде нейтралей и тр-ров на ноль (ТСН), но не генераторы
+    For i = LBound(arrBranchCopy) To UBound(arrBranchCopy)
       If (arrBranchCopy(i, 1) <> 4) And (arrBranchCopy(i, 1) <> 3) Then
         If (arrBranchCopy(i, 3) = 0) And (arrBranchCopy(i, 4) <> 0) Then
           arrBranchCopy(i, 4) = 0
@@ -739,7 +738,7 @@ Private Sub Find_Power_Nodes()
   On Error Resume Next
   n = UBound(NodeBranch)
   If err = 0 Then
-    For i = 0 To n
+    For i = LBound(NodeBranch) To n
       If arrBranchCopy(NodeBranch(i), 3) = RootNode Then
         DestNode = arrBranchCopy(NodeBranch(i), 4)
       Else
@@ -762,7 +761,7 @@ Private Sub Find_Power_Nodes()
 
   ' Подготовим номера питающих узлов и первую ветвь присоединения до них
   NodeBranch = Find_Branch_By_Node(arrBranchCopy2, RootNode)
-  For i = 0 To UBound(list)
+  For i = LBound(list) To UBound(list)
     PowerNode = list(i)
     ' Найдем номер(а) элементов, в которые входят RootNode и PowerNode, если к питающему узлу удет не одна цепь
     ' этих элементов может быть несколько
@@ -771,7 +770,7 @@ Private Sub Find_Power_Nodes()
     n = UBound(Elem)
     If err = 0 Then
       ' Найдем среди присоединений RootNode присоединение с элементом Elem
-      For j = 0 To n
+      For j = LBound(Elem) To n
         e = Elem(j)
         For k = LBound(NodeBranch) To UBound(NodeBranch)
           If arrBranchCopy2(NodeBranch(k), 5) = e Then
@@ -831,7 +830,7 @@ Private Function Get_Testing_Code() As String
 
   Podrejim = 1
   ' Проходим по всем присоединениям, указанным в списке (присоединения к питающему узлу)
-  For i = 0 To UBound(arrPowerNodes)
+  For i = LBound(arrPowerNodes) To UBound(arrPowerNodes)
     PowerNode = arrPowerNodes(i)(0)
     NodeA = arrPowerNodes(i)(1) ' RootNode
     NodeB = arrPowerNodes(i)(2) ' номер противоположного узла первой ветви присоединения к питающему узлу
@@ -846,7 +845,7 @@ Private Function Get_Testing_Code() As String
     arrBaseRejims(i) = Array(BaseRejim, Find_Node(PowerNode) & " (" & ElemName & ")")
       
     ' Пройдемся по всем присоединениям RootNode
-    For j = 0 To UBound(arrRootBranch)
+    For j = LBound(arrRootBranch) To UBound(arrRootBranch)
       ' Для ветвей, отходящих от RootNode найдем номер противоположного узла
       If arrBranch(arrRootBranch(j), 3) = RootNode Then
         CrossNode = arrBranch(arrRootBranch(j), 4)
@@ -867,14 +866,14 @@ Private Function Get_Testing_Code() As String
     
     ' Найдем все присоединения питающего узла и отключим каждое в отдельном подрежиме, основанном на BaseRejim
     NodeBranch = Find_Branch_By_Node(arrBranch, PowerNode)
-    For j = 0 To UBound(NodeBranch)
+    For j = LBound(NodeBranch) To UBound(NodeBranch)
       T = arrBranch(NodeBranch(j), 1)
       
       ' Issue#2: Проверим, что ветвь, отходящая от питающего узла, котороую мы хотим отключить,
       ' не ведет к RootNode (все ветви RootNode кроме одной отключены в базовом режиме)
       Elem = arrBranch(NodeBranch(j), 5)  ' Номер элемента той ветви от PowerNode, которую хотим отключить
       Collision = False
-      For k = 0 To UBound(arrRootBranch)
+      For k = LBound(arrRootBranch) To UBound(arrRootBranch)
         rElem = arrBranch(arrRootBranch(k), 5)
         If Elem = rElem Then
           Collision = True
@@ -940,7 +939,7 @@ Private Function Find_BaseRejim_Name(RejimNo)
   Dim i As Long
 
   Find_BaseRejim_Name = ""
-  For i = 0 To UBound(arrBaseRejims)
+  For i = LBound(arrBaseRejims) To UBound(arrBaseRejims)
     If arrBaseRejims(i)(0) = Int(RejimNo) Then
       Find_BaseRejim_Name = arrBaseRejims(i)(1)
       Exit For
@@ -1028,7 +1027,7 @@ Private Sub Analiz_Testing(Protokol As String)
 
   ' Массив наименований режимов и соответствующих токов заполнен, переносим его на лист
   objRez.Cells(s, 1).Value = "ТКЗ для режима опробования"
-  For i = 0 To UBound(list)
+  For i = LBound(list) To UBound(list)
     objRez.Cells(s + i + 1, 1).Value = list(i)(0)
     For j = 0 To 3
       objRez.Cells(s + i + 1, j + 2).Value = list(i)(1)(j + 1)
