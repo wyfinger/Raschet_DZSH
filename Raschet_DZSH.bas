@@ -69,6 +69,7 @@ Private Function Exe_Name_by_Window_Handle(wnd As Long) As String
 Finally:
     CloseHandle prc
   End If
+  On Error GoTo 0
 
 End Function
 
@@ -204,9 +205,10 @@ d.PutInClipboard
 SendMessage hwnd, EM_SETSEL, 0, -1
 SendMessage hwnd, WM_PASTE, 0, 0
 
-d = Nothing
+Set d = Nothing
 
 End Function
+
 
 Private Function Window_Get_Text(hwnd As Long)
 '
@@ -222,7 +224,7 @@ Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
 d.GetFromClipboard
 Window_Get_Text = d.GetText
 
-d = Nothing
+Set d = Nothing
 
 End Function
 
@@ -404,7 +406,26 @@ Private Function Find_Branch_Index(Node1, Node2)
 End Function
 
 
-Private Function Array_Exists(Source(), Val, Optional Col As Integer = -1) As Integer
+Private Function Array_Exists(ByRef arr()) As Boolean
+'
+' Проверка инициализированности массиива
+'
+
+Dim TempVar As Integer
+On Error GoTo NotExists
+  TempVar = UBound(arr)
+  Array_Exists = True
+  On Error GoTo 0
+  Exit Function
+  
+NotExists:
+  Array_Exists = False
+  On Error GoTo 0
+
+End Function
+
+
+Private Function Array_Find(Source(), Val, Optional Col As Integer = -1) As Integer
 '
 ' Проверка содержания в массиве Source значения Val в столбце Col,
 ' если Col = -1 считаем, что массив одномерный.
@@ -412,25 +433,22 @@ Private Function Array_Exists(Source(), Val, Optional Col As Integer = -1) As In
 '
 
   Dim i As Integer
-  Array_Exists = -1
+  Array_Find = -1
 
-  On Error Resume Next
-  i = UBound(Source)
-  If err.Number = 0 Then
-    For i = LBound(Source) To UBound(Source)
-      If Col = -1 Then
-        If Source(i) = Val Then
-          Array_Exists = i
-        End If
-      Else
-        If Source(Col, i) = Val Then
-          Array_Exists = i
-        End If
+  If Not Array_Exists(Source) Then Exit Function
+
+  For i = LBound(Source) To UBound(Source)
+    If Col = -1 Then
+      If Source(i) = Val Then
+        Array_Find = i
       End If
-    Next
-  End If
-  On Error GoTo 0
-
+    Else
+      If Source(Col, i) = Val Then
+        Array_Find = i
+      End If
+    End If
+  Next
+  
 End Function
 
 
@@ -561,15 +579,15 @@ Private Sub Analiz_Sensitivity(Protokol As String)
 
   ' Подберем подходящее имя для нового листа
   TempSheetName = RootNode & " (" & Find_Node(RootNode) & ")"
-  For i = 0 To 255          ' Врятли кто-то создаст столько вкладок :)
-    If i = 0 Then
-      NewSheetName = TempSheetName
-    Else
-      NewSheetName = TempSheetName & " #" & i
-    End If
-    On Error Resume Next
-    If ActiveWorkbook.Worksheets(NewSheetName) Is Nothing Then Exit For
-  Next
+  On Error Resume Next
+    For i = 0 To 255          ' Врятли кто-то создаст столько вкладок :)
+      If i = 0 Then
+        NewSheetName = TempSheetName
+      Else
+        NewSheetName = TempSheetName & " #" & i
+      End If
+      If ActiveWorkbook.Worksheets(NewSheetName) Is Nothing Then Exit For
+    Next
   On Error GoTo 0
   objRez.Name = NewSheetName
 
@@ -633,10 +651,8 @@ Private Function Delete_Interm_Nodes(Without As Long) As Long
     Node = arrNode(i, 1)
     If Node <> Without Then
       NodeBranch = Find_Branch_By_Node(arrBranchCopy, Node)
-      On Error Resume Next
-      n = -1
-      n = UBound(NodeBranch)
-      If err = 0 Then
+      If Array_Exists(NodeBranch) Then
+        n = UBound(NodeBranch)
         ' Промежуточные узлы
         If n = 1 Then
           ' В ветвях текущего узла найдем позицию текущего узла, чтобы выкинуть из ветвей текущий узел
@@ -752,9 +768,8 @@ Private Sub Find_Power_Nodes()
 
   j = 0
   NodeBranch = Find_Branch_By_Node(arrBranchCopy, RootNode)
-  On Error Resume Next
-  n = UBound(NodeBranch)
-  If err = 0 Then
+  If Array_Exists(NodeBranch) Then
+    n = UBound(NodeBranch)
     For i = LBound(NodeBranch) To n
       If arrBranchCopy(NodeBranch(i), 3) = RootNode Then
         DestNode = arrBranchCopy(NodeBranch(i), 4)
@@ -762,14 +777,13 @@ Private Sub Find_Power_Nodes()
         DestNode = arrBranchCopy(NodeBranch(i), 3)
       End If
       ' Не добавляем дубликаты, которые могут появиться из за шутнирования СВ линиями (кольца)
-      If (Array_Exists(list, DestNode) = -1) And (DestNode <> 0) Then
+      If (Array_Find(list, DestNode) = -1) And (DestNode <> 0) Then
         ReDim Preserve list(j)
         list(j) = DestNode
         j = j + 1
       End If
-    Next i
+    Next
   End If
-  On Error GoTo 0
 
   Dim PowerNode, e As Long
   Dim SecondNode As Long
@@ -783,9 +797,8 @@ Private Sub Find_Power_Nodes()
     ' Найдем номер(а) элементов, в которые входят RootNode и PowerNode, если к питающему узлу удет не одна цепь
     ' этих элементов может быть несколько
     Elem = Find_Element_By_2Node(arrBranchCopy, RootNode, PowerNode)
-    On Error Resume Next
-    n = UBound(Elem)
-    If err = 0 Then
+    If Array_Exists(Elem) Then
+      n = UBound(Elem)
       ' Найдем среди присоединений RootNode присоединение с элементом Elem
       For j = LBound(Elem) To n
         e = Elem(j)
@@ -990,7 +1003,7 @@ Private Function Get_Rejim_Name(Protokol, CurPos)
     apos = InStr(CurPos, Protokol, "(")
     bpos = InStr(apos, Protokol, ")")
     If (apos > 0) And (bpos > apos) Then
-      Get_Rejim_Name = "+Откл " & Trim(Mid(Protokol, apos + 1, bpos - apos - 1))
+      Get_Rejim_Name = "[" & Prefix & "] +Откл " & Trim(Mid(Protokol, apos + 1, bpos - apos - 1))
     End If
   Else
     apos = InStr(CurPos + 10, Protokol, vbCrLf)
