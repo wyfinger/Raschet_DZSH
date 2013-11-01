@@ -212,15 +212,15 @@ Private Function Window_Set_Text(hwnd As Long, sText As String)
 ' Установить в поле ввода текст
 '
 
-Dim d As Object
-Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
-d.SetText (sText)
-d.PutInClipboard
+  Dim d As Object
+  Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
+  d.SetText (sText)
+  d.PutInClipboard
 
-SendMessage hwnd, EM_SETSEL, 0, -1
-SendMessage hwnd, WM_PASTE, 0, 0
+  SendMessage hwnd, EM_SETSEL, 0, -1
+  SendMessage hwnd, WM_PASTE, 0, 0
 
-Set d = Nothing
+  Set d = Nothing
 
 End Function
 
@@ -230,16 +230,16 @@ Private Function Window_Get_Text(hwnd As Long)
 ' Забираем текст из поля ввода
 '
 
-SendMessage hwnd, EM_SETSEL, 0, -1
-SendMessage hwnd, WM_CUT, 0, 0
+  SendMessage hwnd, EM_SETSEL, 0, -1
+  SendMessage hwnd, WM_CUT, 0, 0
 
-' Копируем приказ в буфер
-Dim d As Object
-Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
-d.GetFromClipboard
-Window_Get_Text = d.GetText
+  ' Копируем приказ в буфер
+  Dim d As Object
+  Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
+  d.GetFromClipboard
+  Window_Get_Text = d.GetText
 
-Set d = Nothing
+  Set d = Nothing
 
 End Function
 
@@ -249,18 +249,18 @@ Private Function Show_Process_Window(Caption As String) As Long
 ' Отображение диалога процесса
 '
 
-Dim WinRect As RECT
-Dim cs
-Dim X, Y As Long
+  Dim WinRect As RECT
+  Dim cs
+  Dim X, Y As Long
 
-GetWindowRect Application.hwnd, WinRect
+  GetWindowRect Application.hwnd, WinRect
 
-X = WinRect.Left + (WinRect.Right - WinRect.Left) / 2 - 100
-Y = WinRect.Top + (WinRect.Bottom - WinRect.Top) / 2 - 50
+  X = WinRect.Left + (WinRect.Right - WinRect.Left) / 2 - 100
+  Y = WinRect.Top + (WinRect.Bottom - WinRect.Top) / 2 - 50
 
-Show_Process_Window = CreateWindowEx(WS_EX_TOOLWINDOW, "MDICLIENT", Caption, _
-  WS_SIZEBOX Or WS_CAPTION, X, Y, 200, 100, Application.hwnd, 0, Application.hInstance, cs)
-ShowWindow Show_Process_Window, SW_NORMAL
+  Show_Process_Window = CreateWindowEx(WS_EX_TOOLWINDOW, "MDICLIENT", Caption, _
+    WS_SIZEBOX Or WS_CAPTION, X, Y, 200, 100, Application.hwnd, 0, Application.hInstance, cs)
+  ShowWindow Show_Process_Window, SW_NORMAL
 
 End Function
 
