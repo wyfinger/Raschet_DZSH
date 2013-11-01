@@ -443,6 +443,28 @@ End Function
 
 'private Function
 
+<<<<<<< HEAD
+=======
+Private Function Array_Exists(ByRef arr()) As Boolean
+'
+' Проверка инициализированности массиива
+'
+
+Dim TempVar As Integer
+On Error GoTo NotExists
+  TempVar = UBound(arr)
+  Array_Exists = True
+  On Error GoTo 0
+  Exit Function
+  
+NotExists:
+  Array_Exists = False
+  On Error GoTo 0
+
+End Function
+
+
+>>>>>>> 6c8c434aed513f579d81d94ffa6ad1d211691131
 Private Function Array_Find(Source(), Val, Optional Col As Integer = -1) As Integer
 '
 ' Проверка содержания в массиве Source значения Val в столбце Col,
@@ -453,6 +475,7 @@ Private Function Array_Find(Source(), Val, Optional Col As Integer = -1) As Inte
   Dim i As Integer
   Array_Find = -1
 
+<<<<<<< HEAD
   On Error Resume Next
   i = UBound(Source)
   If err.Number = 0 Then
@@ -469,7 +492,22 @@ Private Function Array_Find(Source(), Val, Optional Col As Integer = -1) As Inte
     Next
   End If
   On Error GoTo 0
+=======
+  If Not Array_Exists(Source) Then Exit Function
+>>>>>>> 6c8c434aed513f579d81d94ffa6ad1d211691131
 
+  For i = LBound(Source) To UBound(Source)
+    If Col = -1 Then
+      If Source(i) = Val Then
+        Array_Find = i
+      End If
+    Else
+      If Source(Col, i) = Val Then
+        Array_Find = i
+      End If
+    End If
+  Next
+  
 End Function
 
 
@@ -600,15 +638,15 @@ Private Sub Analiz_Sensitivity(Protokol As String)
 
   ' Подберем подходящее имя для нового листа
   TempSheetName = RootNode & " (" & Find_Node(RootNode) & ")"
-  For i = 0 To 255          ' Врятли кто-то создаст столько вкладок :)
-    If i = 0 Then
-      NewSheetName = TempSheetName
-    Else
-      NewSheetName = TempSheetName & " #" & i
-    End If
-    On Error Resume Next
-    If ActiveWorkbook.Worksheets(NewSheetName) Is Nothing Then Exit For
-  Next
+  On Error Resume Next
+    For i = 0 To 255          ' Врятли кто-то создаст столько вкладок :)
+      If i = 0 Then
+        NewSheetName = TempSheetName
+      Else
+        NewSheetName = TempSheetName & " #" & i
+      End If
+      If ActiveWorkbook.Worksheets(NewSheetName) Is Nothing Then Exit For
+    Next
   On Error GoTo 0
   objRez.Name = NewSheetName
 
@@ -672,10 +710,8 @@ Private Function Delete_Interm_Nodes(Without As Long) As Long
     Node = arrNode(i, 1)
     If Node <> Without Then
       NodeBranch = Find_Branch_By_Node(arrBranchCopy, Node)
-      On Error Resume Next
-      n = -1
-      n = UBound(NodeBranch)
-      If err = 0 Then
+      If Array_Exists(NodeBranch) Then
+        n = UBound(NodeBranch)
         ' Промежуточные узлы
         If n = 1 Then
           ' В ветвях текущего узла найдем позицию текущего узла, чтобы выкинуть из ветвей текущий узел
@@ -791,9 +827,8 @@ Private Sub Find_Power_Nodes()
 
   j = 0
   NodeBranch = Find_Branch_By_Node(arrBranchCopy, RootNode)
-  On Error Resume Next
-  n = UBound(NodeBranch)
-  If err = 0 Then
+  If Array_Exists(NodeBranch) Then
+    n = UBound(NodeBranch)
     For i = LBound(NodeBranch) To n
       If arrBranchCopy(NodeBranch(i), 3) = RootNode Then
         DestNode = arrBranchCopy(NodeBranch(i), 4)
@@ -806,9 +841,8 @@ Private Sub Find_Power_Nodes()
         list(j) = DestNode
         j = j + 1
       End If
-    Next i
+    Next
   End If
-  On Error GoTo 0
 
   Dim PowerNode, e As Long
   Dim SecondNode As Long
@@ -822,9 +856,8 @@ Private Sub Find_Power_Nodes()
     ' Найдем номер(а) элементов, в которые входят RootNode и PowerNode, если к питающему узлу удет не одна цепь
     ' этих элементов может быть несколько
     Elem = Find_Element_By_2Node(arrBranchCopy, RootNode, PowerNode)
-    On Error Resume Next
-    n = UBound(Elem)
-    If err = 0 Then
+    If Array_Exists(Elem) Then
+      n = UBound(Elem)
       ' Найдем среди присоединений RootNode присоединение с элементом Elem
       For j = LBound(Elem) To n
         e = Elem(j)
