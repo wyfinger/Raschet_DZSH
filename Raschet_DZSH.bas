@@ -149,8 +149,8 @@ Public Function Find_Window_Enum_Proc(ByVal wnd As Long, ByVal lParam As Long) A
   Dim ExeName As String
   Dim WndClass As String
 
-  If IsWindowVisible(wnd) And (GetParent(wnd) = 0) Then
-
+  If GetParent(wnd) = 0 Then
+  
     ExeName = UCase(Extract_File_Name(Exe_Name_by_Window_Handle(wnd)))
     If (ExeName = "TKZ2000.EXE") Then
       WndClass = Get_Class_Name(wnd)
@@ -441,10 +441,7 @@ Private Function Find_Branch_Index(Node1, Node2)
 
 End Function
 
-'private Function
 
-<<<<<<< HEAD
-=======
 Private Function Array_Exists(ByRef arr()) As Boolean
 '
 ' Проверка инициализированности массиива
@@ -464,7 +461,6 @@ NotExists:
 End Function
 
 
->>>>>>> 6c8c434aed513f579d81d94ffa6ad1d211691131
 Private Function Array_Find(Source(), Val, Optional Col As Integer = -1) As Integer
 '
 ' Проверка содержания в массиве Source значения Val в столбце Col,
@@ -475,26 +471,7 @@ Private Function Array_Find(Source(), Val, Optional Col As Integer = -1) As Inte
   Dim i As Integer
   Array_Find = -1
 
-<<<<<<< HEAD
-  On Error Resume Next
-  i = UBound(Source)
-  If err.Number = 0 Then
-    For i = LBound(Source) To UBound(Source)
-      If Col = -1 Then
-        If Source(i) = Val Then
-          Array_Find = i
-        End If
-      Else
-        If Source(Col, i) = Val Then
-          Array_Find = i
-        End If
-      End If
-    Next
-  End If
-  On Error GoTo 0
-=======
   If Not Array_Exists(Source) Then Exit Function
->>>>>>> 6c8c434aed513f579d81d94ffa6ad1d211691131
 
   For i = LBound(Source) To UBound(Source)
     If Col = -1 Then
