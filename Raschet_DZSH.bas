@@ -18,6 +18,10 @@ Private Declare Function GetModuleFileNameEx Lib "PSAPI.DLL" Alias "GetModuleFil
 Private Declare Function IsWindowVisible Lib "user32" (ByVal hwnd As Long) As Long
 Private Declare Function GetParent Lib "user32" (ByVal hwnd As Long) As Long
 Private Declare Function EnumWindows Lib "user32" (ByVal lpEnumFunc As Long, ByVal lParam As Long) As Long
+Private Declare Function CreateWindowEx Lib "user32" Alias "CreateWindowExA" (ByVal dwExStyle As Long, ByVal lpClassName As String, ByVal lpWindowName As String, ByVal dwStyle As Long, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hWndParent As Long, ByVal hMenu As Long, ByVal hInstance As Long, lpParam As Any) As Long
+Private Declare Function ShowWindow Lib "user32" (ByVal hwnd As Long, ByVal nCmdShow As Long) As Long
+Private Declare Function DestroyWindow Lib "user32" (ByVal hwnd As Long) As Long
+Private Declare Function GetWindowRect Lib "user32" (ByVal hwnd As Long, lpRect As RECT) As Long
 
 Private Const WM_COMMAND = &H111
 Private Const WM_PASTE = &H302
@@ -26,6 +30,17 @@ Private Const GW_CHILD = &H5
 Private Const GW_HWNDNEXT = &H2
 Private Const EM_SETSEL = &HB1
 Private Const PROCESS_ALL_ACCESS = &H1F0FFF
+Private Const WS_EX_TOOLWINDOW = &H80
+Private Const WS_SIZEBOX = &H40000
+Private Const WS_CAPTION = &HC00000
+Private Const SW_NORMAL = 1
+
+Private Type RECT
+    Left As Long
+    Top As Long
+    Right As Long
+    Bottom As Long
+End Type
 
 Dim GT_Class As String       ' Временная переменная класса для передачи в Enum-функцию
 Dim GT_Result As Long
@@ -134,8 +149,8 @@ Public Function Find_Window_Enum_Proc(ByVal wnd As Long, ByVal lParam As Long) A
   Dim ExeName As String
   Dim WndClass As String
 
-  If IsWindowVisible(wnd) And (GetParent(wnd) = 0) Then
-
+  If GetParent(wnd) = 0 Then
+  
     ExeName = UCase(Extract_File_Name(Exe_Name_by_Window_Handle(wnd)))
     If (ExeName = "TKZ2000.EXE") Then
       WndClass = Get_Class_Name(wnd)
@@ -197,15 +212,15 @@ Private Function Window_Set_Text(hwnd As Long, sText As String)
 ' Установить в поле ввода текст
 '
 
-Dim d As Object
-Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
-d.SetText (sText)
-d.PutInClipboard
+  Dim d As Object
+  Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
+  d.SetText (sText)
+  d.PutInClipboard
 
-SendMessage hwnd, EM_SETSEL, 0, -1
-SendMessage hwnd, WM_PASTE, 0, 0
+  SendMessage hwnd, EM_SETSEL, 0, -1
+  SendMessage hwnd, WM_PASTE, 0, 0
 
-Set d = Nothing
+  Set d = Nothing
 
 End Function
 
@@ -215,16 +230,37 @@ Private Function Window_Get_Text(hwnd As Long)
 ' Забираем текст из поля ввода
 '
 
-SendMessage hwnd, EM_SETSEL, 0, -1
-SendMessage hwnd, WM_CUT, 0, 0
+  SendMessage hwnd, EM_SETSEL, 0, -1
+  SendMessage hwnd, WM_CUT, 0, 0
 
-' Копируем приказ в буфер
-Dim d As Object
-Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
-d.GetFromClipboard
-Window_Get_Text = d.GetText
+  ' Копируем приказ в буфер
+  Dim d As Object
+  Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
+  d.GetFromClipboard
+  Window_Get_Text = d.GetText
 
-Set d = Nothing
+  Set d = Nothing
+
+End Function
+
+
+Private Function Show_Process_Window(Caption As String) As Long
+'
+' Отображение диалога процесса
+'
+
+  Dim WinRect As RECT
+  Dim cs
+  Dim X, Y As Long
+
+  GetWindowRect Application.hwnd, WinRect
+
+  X = WinRect.Left + (WinRect.Right - WinRect.Left) / 2 - 100
+  Y = WinRect.Top + (WinRect.Bottom - WinRect.Top) / 2 - 50
+
+  Show_Process_Window = CreateWindowEx(WS_EX_TOOLWINDOW, "MDICLIENT", Caption, _
+    WS_SIZEBOX Or WS_CAPTION, X, Y, 200, 100, Application.hwnd, 0, Application.hInstance, cs)
+  ShowWindow Show_Process_Window, SW_NORMAL
 
 End Function
 
@@ -1081,6 +1117,7 @@ Public Sub Raschet_DZSH()
   Dim ProtokolMemo As Long
   Dim CommandsText As String
   Dim ProtokolText As String
+  Dim ProcessWnd As Long
 
   ' Ищем окно ТКЗ-2000, если его нет выводим сообщение и завершаемся
   MainFormHandle = Find_TKZ_Window_Handle("TForm1")
@@ -1101,6 +1138,9 @@ Public Sub Raschet_DZSH()
     MsgBox "Узел " & RootNode & " не найден в сети, дальнейшая работа невозможна.", vbExclamation + vbOKOnly
     Exit Sub
   End If
+
+  ' Отобразим маленький диалог
+  ProcessWnd = Show_Process_Window("Процесс идет, ждите...")
 
   ' Не проверяя в каком режиме работает программа (приказы или диалоговый расчет) выполним пункт меню
   Call SendMessage(MainFormHandle, WM_COMMAND, 12, 0&)     ' "Расширенный формат задания для расчета..."
@@ -1174,5 +1214,8 @@ Public Sub Raschet_DZSH()
     Print #FrFi, ProtokolText
     Close FrFi
   End If
+
+  ' Уберем диалог процесса
+  If ProcessWnd > 0 Then DestroyWindow (ProcessWnd)
 
 End Sub
