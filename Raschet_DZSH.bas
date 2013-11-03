@@ -4,17 +4,18 @@ Attribute VB_Name = "Raschet_DZSH"
 ' ~~~~~~~~~~
 ' https://github.com/wyfinger/Raschet_DZSH
 ' Игорь Матвеев, miv@prim.so-ups.ru
+' 2013
 '
 
 Option Explicit
 
 Private Declare Function SendMessage Lib "user32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
 Private Declare Function GetWindow Lib "user32" (ByVal hwnd As Long, ByVal uCmd As Long) As Long
-Private Declare Function GetClassName Lib "user32.dll" Alias "GetClassNameA" (ByVal hwnd As Long, ByVal lpClassName As String, ByVal nMaxCount As Long) As Long
-Private Declare Function GetWindowThreadProcessId Lib "user32.dll" (ByVal hwnd As Long, lpdwProcessId As Long) As Long
+Private Declare Function GetClassName Lib "user32" Alias "GetClassNameA" (ByVal hwnd As Long, ByVal lpClassName As String, ByVal nMaxCount As Long) As Long
+Private Declare Function GetWindowThreadProcessId Lib "user32" (ByVal hwnd As Long, lpdwProcessId As Long) As Long
 Private Declare Function OpenProcess Lib "kernel32" (ByVal dwDesiredAcess As Long, ByVal bInheritHandle As Long, ByVal dwProcessId As Long) As Long
 Private Declare Function CloseHandle Lib "kernel32" (ByVal hObject As Long) As Long
-Private Declare Function GetModuleFileNameEx Lib "PSAPI.DLL" Alias "GetModuleFileNameExA" (ByVal hProcess As Long, ByVal hModule As Long, ByVal lpFilename As String, ByVal nSize As Long) As Long
+Private Declare Function GetModuleFileNameEx Lib "PSAPI" Alias "GetModuleFileNameExA" (ByVal hProcess As Long, ByVal hModule As Long, ByVal lpFilename As String, ByVal nSize As Long) As Long
 Private Declare Function IsWindowVisible Lib "user32" (ByVal hwnd As Long) As Long
 Private Declare Function GetParent Lib "user32" (ByVal hwnd As Long) As Long
 Private Declare Function EnumWindows Lib "user32" (ByVal lpEnumFunc As Long, ByVal lParam As Long) As Long
@@ -180,7 +181,7 @@ End Function
 
 Private Function Find_SubClass_Recurce(hwnd As Long, sClassName As String, Optional iPos As Integer = 1) As Long
 '
-' Эта функция рекурсивно перебирает все дочерние окна hWnd, сверяя клас окна с sClassName
+' Эта функция рекурсивно перебирает все дочерние окна hWnd, сверяя класс окна с sClassName
 ' Если указан iPos функция возвращает iPos вхождение интересующего класса
 '
 
@@ -404,7 +405,7 @@ End Function
 
 Private Function Find_Element_By_2Node(Branch, Node1, Node2)
 '
-' Ищем список элементов, которые имеют в совоем составе узлы Node1 и Node2
+' Ищем список элементов, которые имеют в своем составе узлы Node1 и Node2
 '
 
   Dim Rez()
@@ -444,7 +445,7 @@ End Function
 
 Private Function Array_Exists(ByRef arr()) As Boolean
 '
-' Проверка инициализированности массиива
+' Проверка инициализированности массива
 '
 
 Dim TempVar As Integer
@@ -669,7 +670,7 @@ End Sub
 
 Private Function Delete_Interm_Nodes(Without As Long) As Long
 '
-' Удаление промежуточных узлов, т.е. тех у которых только два присоединиения
+' Удаление промежуточных узлов, т.е. тех у которых только два присоединения
 ' Функция не гарантирует полного удаления промежуточных п/станций, ее нужно вызывать
 ' до тех пор, пока не будет сделано никаких изменений (функция возвращает количество
 ' удаленных узлов
@@ -830,7 +831,7 @@ Private Sub Find_Power_Nodes()
   NodeBranch = Find_Branch_By_Node(arrBranchCopy2, RootNode)
   For i = LBound(list) To UBound(list)
     PowerNode = list(i)
-    ' Найдем номер(а) элементов, в которые входят RootNode и PowerNode, если к питающему узлу удет не одна цепь
+    ' Найдем номер(а) элементов, в которые входят RootNode и PowerNode, если к питающему узлу идет не одна цепь
     ' этих элементов может быть несколько
     Elem = Find_Element_By_2Node(arrBranchCopy, RootNode, PowerNode)
     If Array_Exists(Elem) Then
@@ -935,7 +936,7 @@ Private Function Get_Testing_Code() As String
     For j = LBound(NodeBranch) To UBound(NodeBranch)
       T = arrBranch(NodeBranch(j), 1)
       
-      ' Issue#2: Проверим, что ветвь, отходящая от питающего узла, котороую мы хотим отключить,
+      ' Issue#2: Проверим, что ветвь, отходящая от питающего узла, которую мы хотим отключить,
       ' не ведет к RootNode (все ветви RootNode кроме одной отключены в базовом режиме)
       Elem = arrBranch(NodeBranch(j), 5)  ' Номер элемента той ветви от PowerNode, которую хотим отключить
       Collision = False
@@ -1202,7 +1203,7 @@ Public Sub Raschet_DZSH()
   ' Заберем результат для анализа
   ProtokolText = Window_Get_Text(ProtokolMemo)
   
-  ' Анализируем резальтаты расчета
+  ' Анализируем результаты расчета
   Analiz_Testing (ProtokolText)
 
   ' Предложить пользователю сохранить расширенный протокол с комментариями
