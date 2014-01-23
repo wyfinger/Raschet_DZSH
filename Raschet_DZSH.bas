@@ -23,6 +23,7 @@ Private Declare Function CreateWindowEx Lib "user32" Alias "CreateWindowExA" (By
 Private Declare Function ShowWindow Lib "user32" (ByVal hwnd As Long, ByVal nCmdShow As Long) As Long
 Private Declare Function DestroyWindow Lib "user32" (ByVal hwnd As Long) As Long
 Private Declare Function GetWindowRect Lib "user32" (ByVal hwnd As Long, lpRect As RECT) As Long
+Private Declare Function GetKeyState Lib "user32" (ByVal nVirtKey As Long) As Integer
 
 Private Const WM_COMMAND = &H111
 Private Const WM_PASTE = &H302
@@ -1119,6 +1120,10 @@ Public Sub Raschet_DZSH()
   Dim CommandsText As String
   Dim ProtokolText As String
   Dim ProcessWnd As Long
+  Dim ManualMode As Boolean
+
+  ' Нажата ли Ctrl ?
+  ManualMode = CBool(GetKeyState(&H11) < 0)
 
   ' Ищем окно ТКЗ-2000, если его нет выводим сообщение и завершаемся
   MainFormHandle = Find_TKZ_Window_Handle("TForm1")
@@ -1163,6 +1168,11 @@ Public Sub Raschet_DZSH()
   CommandRichEdit = Find_SubClass_Recurce(CommandFormHandle, "TRichEdit")
   Window_Set_Text CommandRichEdit, CommandsText
 
+  If ManualMode Then MsgBox _
+  "В окно ввода приказов ТКЗ-2000 вставлен приказ ПРОВЕРКИ ЧУВСТВИТЕЛЬНОСТИ, подготовленный макросом, если Вы хотите изменить его," & _
+  "сделайте это." & vbCrLf & _
+  "Для продолжения работы макроса нажмите Ok"
+
   ' Делаем расчет с эквивалентированием - это значительно быстрее
   Call SendMessage(CommandFormHandle, WM_COMMAND, 179, 0&) ' "Расчет с эквиваленированием"
 
@@ -1198,6 +1208,12 @@ Public Sub Raschet_DZSH()
   Call SendMessage(CommandFormHandle, WM_COMMAND, 200, 0&) ' "Очистить задание"
 
   Window_Set_Text CommandRichEdit, CommandsText
+  
+  If ManualMode Then MsgBox _
+  "В окно ввода приказов ТКЗ-2000 вставлен приказ ПРОВЕРКИ ЧУВСТВИТЕЛЬНОСТИ ПРИ ОПРОБОВАНИИ, подготовленный макросом, если Вы хотите изменить его," & _
+  "сделайте это." & vbCrLf & _
+  "Для продолжения работы макроса нажмите Ok"
+  
   Call SendMessage(CommandFormHandle, WM_COMMAND, 179, 0&) ' "Расчет с эквиваленированием"
   
   ' Заберем результат для анализа
