@@ -1193,10 +1193,12 @@ Public Sub Raschet_DZSH()
   ' Предложить пользователю сохранить расширенный протокол (вначале добавлен исходный приказ с комментариями)
   ProtokolText = CommandsText & vbCrLf & "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" & vbCrLf & ProtokolText
 
-  Dim filePRT
+  Dim setName As String
+  Dim filePRT As String
   Dim FrFi As Integer
-
-  filePRT = Application.GetSaveAsFilename(ActiveWorkbook.Path & "\Чувствительность " & RootNode & " узел.prt", "Файлы протокола АРМ (*.prt), *.prt")
+    
+  setName = Mid(ActiveWorkbook.Name, 1, InStrRev(ActiveWorkbook.Name, ".") - 1)
+  filePRT = Application.GetSaveAsFilename(ActiveWorkbook.Path & "\Чувствительность " & RootNode & " узел " & "(" & setName & ").prt", "Файлы протокола АРМ (*.prt), *.prt")
   If filePRT <> "False" Then
     FrFi = FreeFile
     Open filePRT For Output As FrFi
@@ -1232,7 +1234,7 @@ Public Sub Raschet_DZSH()
 
   ' Предложить пользователю сохранить расширенный протокол с комментариями
   ProtokolText = CommandsText & vbCrLf & "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" & vbCrLf & ProtokolText
-  filePRT = Application.GetSaveAsFilename(ActiveWorkbook.Path & "\Опробование " & RootNode & " узел.prt", "Файлы протокола АРМ (*.prt), *.prt")
+  filePRT = Application.GetSaveAsFilename(ActiveWorkbook.Path & "\Опробование " & RootNode & " узел " & "(" & setName & ").prt", "Файлы протокола АРМ (*.prt), *.prt")
   If filePRT <> "False" Then
     FrFi = FreeFile
     Open filePRT For Output As FrFi
