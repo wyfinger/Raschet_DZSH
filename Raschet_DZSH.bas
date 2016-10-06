@@ -1,9 +1,8 @@
-Attribute VB_Name = "Raschet_DZSH"
 '
-' Макрос ДЗШ
+' РњР°РєСЂРѕСЃ Р”Р—РЁ
 ' ~~~~~~~~~~
 ' https://github.com/wyfinger/Raschet_DZSH
-' Игорь Матвеев, miv@prim.so-ups.ru
+' РРіРѕСЂСЊ РњР°С‚РІРµРµРІ, miv@prim.so-ups.ru
 ' 2013-2014
 '
 
@@ -44,44 +43,44 @@ Private Type RECT
     Bottom As Long
 End Type
 
-Dim GT_Class As String       ' Временная переменная класса для передачи в Enum-функцию
+Dim GT_Class As String       ' Р’СЂРµРјРµРЅРЅР°СЏ РїРµСЂРµРјРµРЅРЅР°СЏ РєР»Р°СЃСЃР° РґР»СЏ РїРµСЂРµРґР°С‡Рё РІ Enum-С„СѓРЅРєС†РёСЋ
 Dim GT_Result As Long
 
-Dim RootNode As Long         ' Самый главный узел :)
-Dim arrRootBranch()          ' Список ветвей главного узла, заполняется в Get_Sensitivity_Code()
+Dim RootNode As String       ' РЎР°РјС‹Р№ РіР»Р°РІРЅС‹Р№ СѓР·РµР» :)
+Dim arrRootBranch()          ' РЎРїРёСЃРѕРє РІРµС‚РІРµР№ РіР»Р°РІРЅРѕРіРѕ СѓР·Р»Р°, Р·Р°РїРѕР»РЅСЏРµС‚СЃСЏ РІ Get_Sensitivity_Code()
 
-Dim arrBranch()              ' Массив ветвей и его копии
+Dim arrBranch()              ' РњР°СЃСЃРёРІ РІРµС‚РІРµР№ Рё РµРіРѕ РєРѕРїРёРё
 Dim arrBranchCopy()
 Dim arrBranchCopy2()
-Dim arrNode()                ' Массив наименований узлов
-Dim arrElement()             ' Массив наименований элементов
+Dim arrNode()                ' РњР°СЃСЃРёРІ РЅР°РёРјРµРЅРѕРІР°РЅРёР№ СѓР·Р»РѕРІ
+Dim arrElement()             ' РњР°СЃСЃРёРІ РЅР°РёРјРµРЅРѕРІР°РЅРёР№ СЌР»РµРјРµРЅС‚РѕРІ
 
-Dim arrPowerNodes()          ' Массив питающих узлов (узел и первая ветвь от RootNode в сторону питающего узла)
-                             ' заполняется в Find_Power_Nodes()
-Dim arrBaseRejims()          ' Массив базовых режимов для проверки чувствительности,
-                             ' заполняется при подготовке приказа в Get_Testing_Code()
-                             ' т.к. из протокола расчета эту инфу не получить
+Dim arrPowerNodes()          ' РњР°СЃСЃРёРІ РїРёС‚Р°СЋС‰РёС… СѓР·Р»РѕРІ (СѓР·РµР» Рё РїРµСЂРІР°СЏ РІРµС‚РІСЊ РѕС‚ RootNode РІ СЃС‚РѕСЂРѕРЅСѓ РїРёС‚Р°СЋС‰РµРіРѕ СѓР·Р»Р°)
+                             ' Р·Р°РїРѕР»РЅСЏРµС‚СЃСЏ РІ Find_Power_Nodes()
+Dim arrBaseRejims()          ' РњР°СЃСЃРёРІ Р±Р°Р·РѕРІС‹С… СЂРµР¶РёРјРѕРІ РґР»СЏ РїСЂРѕРІРµСЂРєРё С‡СѓРІСЃС‚РІРёС‚РµР»СЊРЅРѕСЃС‚Рё,
+                             ' Р·Р°РїРѕР»РЅСЏРµС‚СЃСЏ РїСЂРё РїРѕРґРіРѕС‚РѕРІРєРµ РїСЂРёРєР°Р·Р° РІ Get_Testing_Code()
+                             ' С‚.Рє. РёР· РїСЂРѕС‚РѕРєРѕР»Р° СЂР°СЃС‡РµС‚Р° СЌС‚Сѓ РёРЅС„Сѓ РЅРµ РїРѕР»СѓС‡РёС‚СЊ
 
 
-'##########################################################################[ Функции взаимодействия с окнами ]
+'##########################################################################[ Р¤СѓРЅРєС†РёРё РІР·Р°РёРјРѕРґРµР№СЃС‚РІРёСЏ СЃ РѕРєРЅР°РјРё ]
 
 Private Function Exe_Name_by_Window_Handle(wnd As Long) As String
 '
-' Получение имени EXE файла по Handle окна
+' РџРѕР»СѓС‡РµРЅРёРµ РёРјРµРЅРё EXE С„Р°Р№Р»Р° РїРѕ Handle РѕРєРЅР°
 '
 
   Exe_Name_by_Window_Handle = ""
 
-  Dim prcID As Long  ' Номер процесса
-  Dim prc As Long    ' Дескриптор доступа к данным процесса
+  Dim prcID As Long  ' РќРѕРјРµСЂ РїСЂРѕС†РµСЃСЃР°
+  Dim prc As Long    ' Р”РµСЃРєСЂРёРїС‚РѕСЂ РґРѕСЃС‚СѓРїР° Рє РґР°РЅРЅС‹Рј РїСЂРѕС†РµСЃСЃР°
   Dim wt As String
   wt = Space(1024)
 
-  If GetWindowThreadProcessId(wnd, prcID) <> 0 Then         ' Ищем процесс
-    prc = OpenProcess(PROCESS_ALL_ACCESS, False, prcID)     ' Открываем
+  If GetWindowThreadProcessId(wnd, prcID) <> 0 Then         ' РС‰РµРј РїСЂРѕС†РµСЃСЃ
+    prc = OpenProcess(PROCESS_ALL_ACCESS, False, prcID)     ' РћС‚РєСЂС‹РІР°РµРј
     On Error GoTo Finally
-    If GetModuleFileNameEx(prc, 0, wt, 1024) <> 0 Then      ' Получаем имя EXE
-      Exe_Name_by_Window_Handle = Trim(wt)
+    If GetModuleFileNameEx(prc, 0, wt, 1024) <> 0 Then      ' РџРѕР»СѓС‡Р°РµРј РёРјСЏ EXE
+      Exe_Name_by_Window_Handle = Trim$(wt)
     End If
 Finally:
     CloseHandle prc
@@ -93,7 +92,7 @@ End Function
 
 Private Function Extract_File_Name(FileName As String) As String
 '
-' Получение имени файла из полного пути и имени
+' РџРѕР»СѓС‡РµРЅРёРµ РёРјРµРЅРё С„Р°Р№Р»Р° РёР· РїРѕР»РЅРѕРіРѕ РїСѓС‚Рё Рё РёРјРµРЅРё
 '
 
   Dim SlashPos As Long
@@ -111,7 +110,7 @@ End Function
 
 Private Function Extract_File_Path(FileName As String) As String
 '
-' Получение пути к папке, содержащей файл (без завершающего слеша)
+' РџРѕР»СѓС‡РµРЅРёРµ РїСѓС‚Рё Рє РїР°РїРєРµ, СЃРѕРґРµСЂР¶Р°С‰РµР№ С„Р°Р№Р» (Р±РµР· Р·Р°РІРµСЂС€Р°СЋС‰РµРіРѕ СЃР»РµС€Р°)
 '
 
   Dim SlashPos As Long
@@ -129,7 +128,7 @@ End Function
 
 Private Function Get_Class_Name(ByVal wnd As Long) As String
 '
-' Обертка над стандартной API функцией
+' РћР±РµСЂС‚РєР° РЅР°Рґ СЃС‚Р°РЅРґР°СЂС‚РЅРѕР№ API С„СѓРЅРєС†РёРµР№
 '
 
   Dim ClassName As String
@@ -143,7 +142,7 @@ End Function
 
 Public Function Find_Window_Enum_Proc(ByVal wnd As Long, ByVal lParam As Long) As Boolean
 '
-' Функция обработчик перечисления всех окон в системе для поиска главного окна ТКЗ-2000
+' Р¤СѓРЅРєС†РёСЏ РѕР±СЂР°Р±РѕС‚С‡РёРє РїРµСЂРµС‡РёСЃР»РµРЅРёСЏ РІСЃРµС… РѕРєРѕРЅ РІ СЃРёСЃС‚РµРјРµ РґР»СЏ РїРѕРёСЃРєР° РіР»Р°РІРЅРѕРіРѕ РѕРєРЅР° РўРљР—-2000
 '
 
   Find_Window_Enum_Proc = True
@@ -169,7 +168,7 @@ End Function
 
 Private Function Find_TKZ_Window_Handle(ByVal Class As String) As Long
 '
-' Поиск главного окна программы ТКЗ-2000
+' РџРѕРёСЃРє РіР»Р°РІРЅРѕРіРѕ РѕРєРЅР° РїСЂРѕРіСЂР°РјРјС‹ РўРљР—-2000
 '
 
   GT_Result = 0
@@ -182,8 +181,8 @@ End Function
 
 Private Function Find_SubClass_Recurce(hwnd As Long, sClassName As String, Optional iPos As Integer = 1) As Long
 '
-' Эта функция рекурсивно перебирает все дочерние окна hWnd, сверяя класс окна с sClassName
-' Если указан iPos функция возвращает iPos вхождение интересующего класса
+' Р­С‚Р° С„СѓРЅРєС†РёСЏ СЂРµРєСѓСЂСЃРёРІРЅРѕ РїРµСЂРµР±РёСЂР°РµС‚ РІСЃРµ РґРѕС‡РµСЂРЅРёРµ РѕРєРЅР° hWnd, СЃРІРµСЂСЏСЏ РєР»Р°СЃСЃ РѕРєРЅР° СЃ sClassName
+' Р•СЃР»Рё СѓРєР°Р·Р°РЅ iPos С„СѓРЅРєС†РёСЏ РІРѕР·РІСЂР°С‰Р°РµС‚ iPos РІС…РѕР¶РґРµРЅРёРµ РёРЅС‚РµСЂРµСЃСѓСЋС‰РµРіРѕ РєР»Р°СЃСЃР°
 '
 
   Dim window_class As String
@@ -211,7 +210,7 @@ End Function
 
 Private Function Window_Set_Text(hwnd As Long, sText As String)
 '
-' Установить в поле ввода текст
+' РЈСЃС‚Р°РЅРѕРІРёС‚СЊ РІ РїРѕР»Рµ РІРІРѕРґР° С‚РµРєСЃС‚
 '
 
   Dim d As Object
@@ -229,13 +228,13 @@ End Function
 
 Private Function Window_Get_Text(hwnd As Long)
 '
-' Забираем текст из поля ввода
+' Р—Р°Р±РёСЂР°РµРј С‚РµРєСЃС‚ РёР· РїРѕР»СЏ РІРІРѕРґР°
 '
 
   SendMessage hwnd, EM_SETSEL, 0, -1
   SendMessage hwnd, WM_CUT, 0, 0
 
-  ' Копируем приказ в буфер
+  ' РљРѕРїРёСЂСѓРµРј РїСЂРёРєР°Р· РІ Р±СѓС„РµСЂ
   Dim d As Object
   Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
   d.GetFromClipboard
@@ -248,7 +247,7 @@ End Function
 
 Private Function Show_Process_Window(Caption As String) As Long
 '
-' Отображение диалога процесса
+' РћС‚РѕР±СЂР°Р¶РµРЅРёРµ РґРёР°Р»РѕРіР° РїСЂРѕС†РµСЃСЃР°
 '
 
   Dim WinRect As RECT
@@ -267,32 +266,32 @@ Private Function Show_Process_Window(Caption As String) As Long
 End Function
 
 
-'#################################################################################################[Расчет ДЗШ]
+'#################################################################################################[Р Р°СЃС‡РµС‚ Р”Р—РЁ]
 
 Private Sub Initialize()
 '
-' Подготовка - изымаем данные с листа в переменные
+' РџРѕРґРіРѕС‚РѕРІРєР° - РёР·С‹РјР°РµРј РґР°РЅРЅС‹Рµ СЃ Р»РёСЃС‚Р° РІ РїРµСЂРµРјРµРЅРЅС‹Рµ
 '
 
   Dim wshBranch
   Dim wshNode
   Dim wshElement
 
-  ' 1. Ветви - берем первые пять столбцов страницы 'Таблица ветвей'
-  Set wshBranch = ActiveWorkbook.Worksheets("Таблица ветвей")
+  ' 1. Р’РµС‚РІРё - Р±РµСЂРµРј РїРµСЂРІС‹Рµ РїСЏС‚СЊ СЃС‚РѕР»Р±С†РѕРІ СЃС‚СЂР°РЅРёС†С‹ 'РўР°Р±Р»РёС†Р° РІРµС‚РІРµР№'
+  Set wshBranch = ActiveWorkbook.Worksheets("РўР°Р±Р»РёС†Р° РІРµС‚РІРµР№")
   arrBranch = wshBranch.Range("A3:K" & wshBranch.UsedRange.Rows.Count).Value2
   arrBranchCopy = wshBranch.Range("A3:E" & wshBranch.UsedRange.Rows.Count).Value2
   arrBranchCopy2 = wshBranch.Range("A3:E" & wshBranch.UsedRange.Rows.Count).Value2
 
-  ' 2. Узлы - берем первые три столбца страницы 'Наим.узлов'
-  Set wshNode = ActiveWorkbook.Worksheets("Наим.узлов")
+  ' 2. РЈР·Р»С‹ - Р±РµСЂРµРј РїРµСЂРІС‹Рµ С‚СЂРё СЃС‚РѕР»Р±С†Р° СЃС‚СЂР°РЅРёС†С‹ 'РќР°РёРј.СѓР·Р»РѕРІ'
+  Set wshNode = ActiveWorkbook.Worksheets("РќР°РёРј.СѓР·Р»РѕРІ")
   arrNode = wshNode.Range("A3:E" & wshNode.UsedRange.Rows.Count).Value2
 
-  ' 3. Элементы - берем первые два столбца страницы 'Наим.элементов'
-  Set wshElement = ActiveWorkbook.Worksheets("Наим.элементов")
+  ' 3. Р­Р»РµРјРµРЅС‚С‹ - Р±РµСЂРµРј РїРµСЂРІС‹Рµ РґРІР° СЃС‚РѕР»Р±С†Р° СЃС‚СЂР°РЅРёС†С‹ 'РќР°РёРј.СЌР»РµРјРµРЅС‚РѕРІ'
+  Set wshElement = ActiveWorkbook.Worksheets("РќР°РёРј.СЌР»РµРјРµРЅС‚РѕРІ")
   arrElement = wshElement.Range("A3:B" & wshElement.UsedRange.Rows.Count).Value2
 
-  ' Очистка памяти
+  ' РћС‡РёСЃС‚РєР° РїР°РјСЏС‚Рё
   Set wshBranch = Nothing
   Set wshNode = Nothing
   Set wshElement = Nothing
@@ -302,7 +301,7 @@ End Sub
 
 Private Function Find_Branch_By_Node(BranchArray, Node)
 '
-' Ищем все ветви, в которые входит заданный узел
+' РС‰РµРј РІСЃРµ РІРµС‚РІРё, РІ РєРѕС‚РѕСЂС‹Рµ РІС…РѕРґРёС‚ Р·Р°РґР°РЅРЅС‹Р№ СѓР·РµР»
 '
 
   Dim Rez()
@@ -310,7 +309,7 @@ Private Function Find_Branch_By_Node(BranchArray, Node)
   Dim j As Integer
   j = 0
   For i = LBound(BranchArray) To UBound(BranchArray)
-    If (Int(BranchArray(i, 3)) = Node) Or (Int(BranchArray(i, 4)) = Node) Then
+    If (Trim$(BranchArray(i, 3)) = Node) Or (Trim$(BranchArray(i, 4)) = Node) Then
       ReDim Preserve Rez(j)
       Rez(j) = i
       j = j + 1
@@ -321,16 +320,16 @@ Private Function Find_Branch_By_Node(BranchArray, Node)
 End Function
 
 
-Private Function Find_Branch_By_2Node(BranchArray, Node1, Node2)
+Private Function Find_Branch_By_2Node(BranchArray, Node1 As String, Node2 As String)
 '
-' Ищем одну ветвь по имеющимся двум узлам, ее образующим, возвращаем номер ветви
+' РС‰РµРј РѕРґРЅСѓ РІРµС‚РІСЊ РїРѕ РёРјРµСЋС‰РёРјСЃСЏ РґРІСѓРј СѓР·Р»Р°Рј, РµРµ РѕР±СЂР°Р·СѓСЋС‰РёРј, РІРѕР·РІСЂР°С‰Р°РµРј РЅРѕРјРµСЂ РІРµС‚РІРё
 '
   Dim i, Rez As Integer
   Rez = -1
 
   For i = LBound(BranchArray) To UBound(BranchArray)
-    If ((Int(BranchArray(i, 3)) = Node1) And (Int(BranchArray(i, 4)) = Node2)) Or _
-       ((Int(BranchArray(i, 3)) = Node2) And (Int(BranchArray(i, 4)) = Node1)) Then
+    If ((Trim$(BranchArray(i, 3)) = Node1) And (Trim$(BranchArray(i, 4)) = Node2)) Or _
+       ((Trim$(BranchArray(i, 3)) = Node2) And (Trim$(BranchArray(i, 4)) = Node1)) Then
       Find_Branch_By_2Node = i
       Exit For
     End If
@@ -339,15 +338,15 @@ Private Function Find_Branch_By_2Node(BranchArray, Node1, Node2)
 End Function
 
 
-Private Function Find_Node(Node)
+Private Function Find_Node(Node As String) As String
 '
-' Ищем наименование узла по номеру
+' РС‰РµРј РЅР°РёРјРµРЅРѕРІР°РЅРёРµ СѓР·Р»Р° РїРѕ РЅРѕРјРµСЂСѓ
 '
 
   Dim i As Integer
   For i = LBound(arrNode) To UBound(arrNode)
-    If Int(arrNode(i, 1)) = Node Then
-      Find_Node = Trim(arrNode(i, 2))
+    If Trim$(arrNode(i, 1)) = Trim$(Node) Then
+      Find_Node = Trim$(arrNode(i, 2))
       Exit For
     End If
   Next
@@ -355,14 +354,15 @@ Private Function Find_Node(Node)
 End Function
 
 
-Private Function Find_Node_Index(Node)
+Private Function Find_Node_Index(Node As String) As Integer
 '
-' Ищем индекс узла по номеру
+' РС‰РµРј РёРЅРґРµРєСЃ СѓР·Р»Р° РїРѕ РЅРѕРјРµСЂСѓ
 '
 
+  Find_Node_Index = -1
   Dim i As Integer
   For i = LBound(arrNode) To UBound(arrNode)
-    If Int(arrNode(i, 1)) = Node Then
+    If Trim$(arrNode(i, 1)) = Node Then
       Find_Node_Index = i
       Exit For
     End If
@@ -371,15 +371,15 @@ Private Function Find_Node_Index(Node)
 End Function
 
 
-Private Function Node_Exists(Node)
+Private Function Node_Exists(Node As String) As Boolean
 '
-' Проверка существования узла
+' РџСЂРѕРІРµСЂРєР° СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёСЏ СѓР·Р»Р°
 '
 
   Dim i As Integer
   Node_Exists = False
   For i = LBound(arrNode) To UBound(arrNode)
-    If Int(arrNode(i, 1)) = Node Then
+    If Trim$(arrNode(i, 1)) = Node Then
       Node_Exists = True
       Exit For
     End If
@@ -388,15 +388,15 @@ Private Function Node_Exists(Node)
 End Function
 
 
-Private Function Find_Element(Element)
+Private Function Find_Element(Element As Long) As String
 '
-' Ищем наименование элемента по номеру
+' РС‰РµРј РЅР°РёРјРµРЅРѕРІР°РЅРёРµ СЌР»РµРјРµРЅС‚Р° РїРѕ РЅРѕРјРµСЂСѓ
 '
 
   Dim i As Integer
   For i = LBound(arrElement) To UBound(arrElement)
     If Int(arrElement(i, 1)) = Element Then
-      Find_Element = Trim(arrElement(i, 2))
+      Find_Element = Trim$(arrElement(i, 2))
       Exit For
     End If
   Next
@@ -404,9 +404,9 @@ Private Function Find_Element(Element)
 End Function
 
 
-Private Function Find_Element_By_2Node(Branch, Node1, Node2)
+Private Function Find_Element_By_2Node(Branch, Node1 As String, Node2 As String)
 '
-' Ищем список элементов, которые имеют в своем составе узлы Node1 и Node2
+' РС‰РµРј СЃРїРёСЃРѕРє СЌР»РµРјРµРЅС‚РѕРІ, РєРѕС‚РѕСЂС‹Рµ РёРјРµСЋС‚ РІ СЃРІРѕРµРј СЃРѕСЃС‚Р°РІРµ СѓР·Р»С‹ Node1 Рё Node2
 '
 
   Dim Rez()
@@ -428,7 +428,7 @@ End Function
 
 Private Function Find_Branch_Index(Node1, Node2)
 '
-' Ищем индекс ветви по узлам слева и справа, порядок узлов не имеет значения
+' РС‰РµРј РёРЅРґРµРєСЃ РІРµС‚РІРё РїРѕ СѓР·Р»Р°Рј СЃР»РµРІР° Рё СЃРїСЂР°РІР°, РїРѕСЂСЏРґРѕРє СѓР·Р»РѕРІ РЅРµ РёРјРµРµС‚ Р·РЅР°С‡РµРЅРёСЏ
 '
 
   Dim i As Integer
@@ -446,7 +446,7 @@ End Function
 
 Private Function Array_Exists(ByRef arr()) As Boolean
 '
-' Проверка инициализированности массива
+' РџСЂРѕРІРµСЂРєР° РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°РЅРЅРѕСЃС‚Рё РјР°СЃСЃРёРІР°
 '
 
 Dim TempVar As Integer
@@ -465,9 +465,9 @@ End Function
 
 Private Function Array_Find(Source(), Val, Optional Col As Integer = -1) As Integer
 '
-' Проверка содержания в массиве Source значения Val в столбце Col,
-' если Col = -1 считаем, что массив одномерный.
-' Возвращаем индекс элемента (первый) или -1, если не найдено
+' РџСЂРѕРІРµСЂРєР° СЃРѕРґРµСЂР¶Р°РЅРёСЏ РІ РјР°СЃСЃРёРІРµ Source Р·РЅР°С‡РµРЅРёСЏ Val РІ СЃС‚РѕР»Р±С†Рµ Col,
+' РµСЃР»Рё Col = -1 СЃС‡РёС‚Р°РµРј, С‡С‚Рѕ РјР°СЃСЃРёРІ РѕРґРЅРѕРјРµСЂРЅС‹Р№.
+' Р’РѕР·РІСЂР°С‰Р°РµРј РёРЅРґРµРєСЃ СЌР»РµРјРµРЅС‚Р° (РїРµСЂРІС‹Р№) РёР»Рё -1, РµСЃР»Рё РЅРµ РЅР°Р№РґРµРЅРѕ
 '
 
   Dim i As Integer
@@ -492,35 +492,35 @@ End Function
 
 Private Function Get_Sensitivity_Code() As String
 '
-' Подготовка приказа для оценки чувствительности ДЗШ
-' Ищем все присоединения текущего узла, делаем КЗ на узле в нормальном режиме,
-' а в подрежимах отключаем по одному присоединению
+' РџРѕРґРіРѕС‚РѕРІРєР° РїСЂРёРєР°Р·Р° РґР»СЏ РѕС†РµРЅРєРё С‡СѓРІСЃС‚РІРёС‚РµР»СЊРЅРѕСЃС‚Рё Р”Р—РЁ
+' РС‰РµРј РІСЃРµ РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЏ С‚РµРєСѓС‰РµРіРѕ СѓР·Р»Р°, РґРµР»Р°РµРј РљР— РЅР° СѓР·Р»Рµ РІ РЅРѕСЂРјР°Р»СЊРЅРѕРј СЂРµР¶РёРјРµ,
+' Р° РІ РїРѕРґСЂРµР¶РёРјР°С… РѕС‚РєР»СЋС‡Р°РµРј РїРѕ РѕРґРЅРѕРјСѓ РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЋ
 '
 
   Dim R As String
 
   R = _
-    "*         ПРОВЕРКА ЧУВСТВИТЕЛЬНОСТИ ДЗШ, УЗЕЛ " & RootNode & " [" & Find_Node(RootNode) & "]" & vbCrLf & _
-    "ВЕЛИЧИНА  IA IB IC" & vbCrLf & _
-    "1-ПОЯС    " & RootNode & "      /* " & Find_Node(RootNode) & vbCrLf & _
-    "СНСМ      1" & vbCrLf & _
-    "ЗАМ-ФАЗ   " & RootNode & "/ABC" & vbCrLf & _
-    "СНСМ      2" & vbCrLf & _
-    "ЗАМ-ФАЗ   " & RootNode & "/AB" & vbCrLf & _
-    "СНСМ      3" & vbCrLf & _
-    "ЗАМ-ФАЗ   " & RootNode & "/AB0" & vbCrLf & _
-    "СНСМ      4" & vbCrLf & _
-    "ЗАМ-ФАЗ   " & RootNode & "/A0" & vbCrLf & _
-    "ПОДРЕЖИМ  1    /* ВСЕ ВКЛЮЧЕНО" & vbCrLf
+    "*         РџР РћР’Р•Р РљРђ Р§РЈР’РЎРўР’РРўР•Р›Р¬РќРћРЎРўР Р”Р—РЁ, РЈР—Р•Р› " & RootNode & " [" & Find_Node(RootNode) & "]" & vbCrLf & _
+    "Р’Р•Р›РР§РРќРђ  IA IB IC" & vbCrLf & _
+    "1-РџРћРЇРЎ    " & RootNode & "      /* " & Find_Node(RootNode) & vbCrLf & _
+    "РЎРќРЎРњ      1" & vbCrLf & _
+    "Р—РђРњ-Р¤РђР—   " & RootNode & "/ABC" & vbCrLf & _
+    "РЎРќРЎРњ      2" & vbCrLf & _
+    "Р—РђРњ-Р¤РђР—   " & RootNode & "/AB" & vbCrLf & _
+    "РЎРќРЎРњ      3" & vbCrLf & _
+    "Р—РђРњ-Р¤РђР—   " & RootNode & "/AB0" & vbCrLf & _
+    "РЎРќРЎРњ      4" & vbCrLf & _
+    "Р—РђРњ-Р¤РђР—   " & RootNode & "/A0" & vbCrLf & _
+    "РџРћР”Р Р•Р–РРњ  1    /* Р’РЎР• Р’РљР›Р®Р§Р•РќРћ" & vbCrLf
 
-  Dim CrossNode As Long
+  Dim CrossNode As String
   Dim ElemNo As Long
   Dim BranchType As Long
   Dim ElemName As String
   Dim NewStr As String
   Dim i As Long
 
-  ' Для каждого из присоединений RootNode создаем подрежим, где отключаем присоединения
+  ' Р”Р»СЏ РєР°Р¶РґРѕРіРѕ РёР· РїСЂРёСЃРѕРµРґРёРЅРµРЅРёР№ RootNode СЃРѕР·РґР°РµРј РїРѕРґСЂРµР¶РёРј, РіРґРµ РѕС‚РєР»СЋС‡Р°РµРј РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЏ
   arrRootBranch = Find_Branch_By_Node(arrBranch, RootNode)
   For i = LBound(arrRootBranch) To UBound(arrRootBranch)
     If arrBranch(arrRootBranch(i), 3) = RootNode Then
@@ -530,15 +530,15 @@ Private Function Get_Sensitivity_Code() As String
     End If
     ElemNo = arrBranch(arrRootBranch(i), 5)
     BranchType = arrBranch(arrRootBranch(i), 1)
-    ' Issue#8: Незачем отключать отключенные ШСВ
+    ' Issue#8: РќРµР·Р°С‡РµРј РѕС‚РєР»СЋС‡Р°С‚СЊ РѕС‚РєР»СЋС‡РµРЅРЅС‹Рµ РЁРЎР’
     If BranchType <> 101 Then
       ElemName = Find_Element(ElemNo)
-      If (CrossNode = 0) Or (ElemNo = 0) Then               ' отключаем ветвь
-        NewStr = "ПОДРЕЖИМ  " & (i + 2) & vbCrLf & _
-        "ОТКЛ      0 *" & RootNode & "-" & CrossNode & "      /* НЕЙТРАЛЬ ?"
-      Else                                                  ' отключаем элемент
-        NewStr = "ПОДРЕЖИМ  " & (i + 2) & vbCrLf & _
-        "ЭЛЕМЕНТ   " & ElemNo & "      /* " & ElemName
+      If (CrossNode = "0") Or (ElemNo = 0) Then               ' РѕС‚РєР»СЋС‡Р°РµРј РІРµС‚РІСЊ
+        NewStr = "РџРћР”Р Р•Р–РРњ  " & (i + 2) & vbCrLf & _
+        "РћРўРљР›      0 *" & RootNode & "-" & CrossNode & "      /* РќР•Р™РўР РђР›Р¬ ?"
+      Else                                                  ' РѕС‚РєР»СЋС‡Р°РµРј СЌР»РµРјРµРЅС‚
+        NewStr = "РџРћР”Р Р•Р–РРњ  " & (i + 2) & vbCrLf & _
+        "Р­Р›Р•РњР•РќРў   " & ElemNo & "      /* " & ElemName
       End If
       R = R & NewStr & vbCrLf
     End If
@@ -551,8 +551,8 @@ End Function
 
 Private Function Parse_Current_Line(T, FromPos, ByRef FinishPos)
 '
-' Функция ищет суммарные токи КЗ в несимметриях в тексте протокола Т начиная с
-' FromPos, в параметр FinishPos записывается позиция, на которой остановился парсер
+' Р¤СѓРЅРєС†РёСЏ РёС‰РµС‚ СЃСѓРјРјР°СЂРЅС‹Рµ С‚РѕРєРё РљР— РІ РЅРµСЃРёРјРјРµС‚СЂРёСЏС… РІ С‚РµРєСЃС‚Рµ РїСЂРѕС‚РѕРєРѕР»Р° Рў РЅР°С‡РёРЅР°СЏ СЃ
+' FromPos, РІ РїР°СЂР°РјРµС‚СЂ FinishPos Р·Р°РїРёСЃС‹РІР°РµС‚СЃСЏ РїРѕР·РёС†РёСЏ, РЅР° РєРѕС‚РѕСЂРѕР№ РѕСЃС‚Р°РЅРѕРІРёР»СЃСЏ РїР°СЂСЃРµСЂ
 '
 
   Dim Imin(1 To 4)
@@ -560,10 +560,10 @@ Private Function Parse_Current_Line(T, FromPos, ByRef FinishPos)
   Dim Ia, Ib As Long
 
   For i = 1 To 4
-    FinishPos = InStr(FromPos, T, "СНСМ      " & i)
-    FinishPos = InStr(FinishPos, T, "IАсум")
+    FinishPos = InStr(FromPos, T, "РЎРќРЎРњ      " & i)
+    FinishPos = InStr(FinishPos, T, "IРђСЃСѓРј")
     Ia = Int(Mid(T, FinishPos + 5, 10))
-    FinishPos = InStr(FinishPos, T, "IВсум")
+    FinishPos = InStr(FinishPos, T, "IР’СЃСѓРј")
     Ib = Int(Mid(T, FinishPos + 5, 10))
     If (Ib < Ia) And (Ib > 0) Then Imin(i) = Ib Else Imin(i) = Ia
   Next
@@ -574,27 +574,27 @@ End Function
 
 Private Function Parse_Rezhim_Single(T, FromPos)
 '
-' Ищем что отключается в подрежиме, здесь обрабатывается только одно отключение
+' РС‰РµРј С‡С‚Рѕ РѕС‚РєР»СЋС‡Р°РµС‚СЃСЏ РІ РїРѕРґСЂРµР¶РёРјРµ, Р·РґРµСЃСЊ РѕР±СЂР°Р±Р°С‚С‹РІР°РµС‚СЃСЏ С‚РѕР»СЊРєРѕ РѕРґРЅРѕ РѕС‚РєР»СЋС‡РµРЅРёРµ
 '
 
   Dim apos, bpos As Long
   Dim Prefix As String
   Dim pa, pb, pc As Long
 
-  apos = InStr(FromPos, T, "Подрежим")
+  apos = InStr(FromPos, T, "РџРѕРґСЂРµР¶РёРј")
   bpos = InStr(FromPos, T, vbCrLf)
   If (apos > 0) And (bpos > apos) Then
-    Prefix = Trim(Mid(T, apos + 8, bpos - apos - 8))
+    Prefix = Trim$(Mid(T, apos + 8, bpos - apos - 8))
   End If
 
   pa = InStr(FromPos, T, "(") + 1
   pb = InStr(FromPos, T, ")")
-  pc = InStr(FromPos, T, "СНСМ")
+  pc = InStr(FromPos, T, "РЎРќРЎРњ")
   If (pa > 0) And (pb > 0) And (pc > 0) Then
     If pc > pb Then
-      Parse_Rezhim_Single = "-" & Trim(Mid(T, pa, pb - pa))
+      Parse_Rezhim_Single = "-" & Trim$(Mid(T, pa, pb - pa))
     Else
-      Parse_Rezhim_Single = "КЗ на " & RootNode & ", ВСЕ ВКЛЮЧЕНО"
+      Parse_Rezhim_Single = "РљР— РЅР° " & RootNode & ", Р’РЎР• Р’РљР›Р®Р§Р•РќРћ"
     End If
   End If
   Parse_Rezhim_Single = "[" & Prefix & "] " & Parse_Rezhim_Single
@@ -604,10 +604,10 @@ End Function
 
 Private Sub Analiz_Sensitivity(Protokol As String)
 '
-' Разбор протокола АРМ ТКЗ и концентрация токов в отдельном листе
+' Р Р°Р·Р±РѕСЂ РїСЂРѕС‚РѕРєРѕР»Р° РђР Рњ РўРљР— Рё РєРѕРЅС†РµРЅС‚СЂР°С†РёСЏ С‚РѕРєРѕРІ РІ РѕС‚РґРµР»СЊРЅРѕРј Р»РёСЃС‚Рµ
 '
 
-  ' Добавляем лист для результатов
+  ' Р”РѕР±Р°РІР»СЏРµРј Р»РёСЃС‚ РґР»СЏ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
   Dim objRez
   Dim TempSheetName As String
   Dim NewSheetName As String
@@ -615,10 +615,10 @@ Private Sub Analiz_Sensitivity(Protokol As String)
   Set objRez = ActiveWorkbook.Worksheets.Add
   objRez.Columns("A:A").ColumnWidth = 35#
 
-  ' Подберем подходящее имя для нового листа
+  ' РџРѕРґР±РµСЂРµРј РїРѕРґС…РѕРґСЏС‰РµРµ РёРјСЏ РґР»СЏ РЅРѕРІРѕРіРѕ Р»РёСЃС‚Р°
   TempSheetName = RootNode & " (" & Find_Node(RootNode) & ")"
   On Error Resume Next
-    For i = 0 To 255          ' Врятли кто-то создаст столько вкладок :)
+    For i = 0 To 255          ' Р’СЂСЏС‚Р»Рё РєС‚Рѕ-С‚Рѕ СЃРѕР·РґР°СЃС‚ СЃС‚РѕР»СЊРєРѕ РІРєР»Р°РґРѕРє :)
       If i = 0 Then
         NewSheetName = TempSheetName
       Else
@@ -629,36 +629,36 @@ Private Sub Analiz_Sensitivity(Protokol As String)
   On Error GoTo 0
   objRez.Name = NewSheetName
 
-  objRez.Cells(1, 1).Value = "Узел " & RootNode & " (" & Find_Node(RootNode) & ")"
-  objRez.Cells(2, 1).Value = "ТКЗ для чувств. пуск. и изб. органов"
-  objRez.Cells(2, 2).Value = "КЗ(3)"
-  objRez.Cells(2, 3).Value = "КЗ(2)"
-  objRez.Cells(2, 4).Value = "КЗ(1+1)"
-  objRez.Cells(2, 5).Value = "КЗ(1)"
+  objRez.Cells(1, 1).Value = "РЈР·РµР» " & RootNode & " (" & Find_Node(RootNode) & ")"
+  objRez.Cells(2, 1).Value = "РўРљР— РґР»СЏ С‡СѓРІСЃС‚РІ. РїСѓСЃРє. Рё РёР·Р±. РѕСЂРіР°РЅРѕРІ"
+  objRez.Cells(2, 2).Value = "РљР—(3)"
+  objRez.Cells(2, 3).Value = "РљР—(2)"
+  objRez.Cells(2, 4).Value = "РљР—(1+1)"
+  objRez.Cells(2, 5).Value = "РљР—(1)"
 
-  ' Пройдемся по подрежимам
+  ' РџСЂРѕР№РґРµРјСЃСЏ РїРѕ РїРѕРґСЂРµР¶РёРјР°Рј
   Dim list()
   Dim j As Long
   Dim StartPos As Long
   Dim R As String
   j = 0
 
-  StartPos = InStr(Protokol, "Р Е З У Л Ь Т А Т Ы    Р А С Ч Е Т А")
-  StartPos = InStr(StartPos, Protokol, "Подрежим  " & j + 1)
+  StartPos = InStr(Protokol, "Р  Р• Р— РЈ Р› Р¬ Рў Рђ Рў Р«    Р  Рђ РЎ Р§ Р• Рў Рђ")
+  StartPos = InStr(StartPos, Protokol, "РџРѕРґСЂРµР¶РёРј  " & j + 1)
 
-  ' Найдем что отключалось в этом подрежиме, в данном случае это только одна ветвь или элемент
+  ' РќР°Р№РґРµРј С‡С‚Рѕ РѕС‚РєР»СЋС‡Р°Р»РѕСЃСЊ РІ СЌС‚РѕРј РїРѕРґСЂРµР¶РёРјРµ, РІ РґР°РЅРЅРѕРј СЃР»СѓС‡Р°Рµ СЌС‚Рѕ С‚РѕР»СЊРєРѕ РѕРґРЅР° РІРµС‚РІСЊ РёР»Рё СЌР»РµРјРµРЅС‚
   R = Parse_Rezhim_Single(Protokol, StartPos)
 
   Do
     ReDim Preserve list(j)
     list(j) = Array(R, Parse_Current_Line(Protokol, StartPos, StartPos))
     j = j + 1
-    StartPos = InStr(StartPos, Protokol, "Подрежим  " & j + 1)
+    StartPos = InStr(StartPos, Protokol, "РџРѕРґСЂРµР¶РёРј  " & j + 1)
     If StartPos > 0 Then R = Parse_Rezhim_Single(Protokol, StartPos)
-    DoEvents     ' Для того, чтобы работал выход по  Ctrl+C
+    DoEvents     ' Р”Р»СЏ С‚РѕРіРѕ, С‡С‚РѕР±С‹ СЂР°Р±РѕС‚Р°Р» РІС‹С…РѕРґ РїРѕ  Ctrl+C
   Loop While StartPos > 0
 
-  ' Массив наименований режимов и соответствующих токов заполнен, переносим его на лист
+  ' РњР°СЃСЃРёРІ РЅР°РёРјРµРЅРѕРІР°РЅРёР№ СЂРµР¶РёРјРѕРІ Рё СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёС… С‚РѕРєРѕРІ Р·Р°РїРѕР»РЅРµРЅ, РїРµСЂРµРЅРѕСЃРёРј РµРіРѕ РЅР° Р»РёСЃС‚
   For i = LBound(list) To UBound(list)
     objRez.Cells(i + 3, 1).Value = list(i)(0)
     For j = 0 To 3
@@ -669,19 +669,19 @@ Private Sub Analiz_Sensitivity(Protokol As String)
 End Sub
 
 
-Private Function Delete_Interm_Nodes(Without As Long) As Long
+Private Function Delete_Interm_Nodes(Without As String) As Long
 '
-' Удаление промежуточных узлов, т.е. тех у которых только два присоединения
-' Функция не гарантирует полного удаления промежуточных п/станций, ее нужно вызывать
-' до тех пор, пока не будет сделано никаких изменений (функция возвращает количество
-' удаленных узлов
+' РЈРґР°Р»РµРЅРёРµ РїСЂРѕРјРµР¶СѓС‚РѕС‡РЅС‹С… СѓР·Р»РѕРІ, С‚.Рµ. С‚РµС… Сѓ РєРѕС‚РѕСЂС‹С… С‚РѕР»СЊРєРѕ РґРІР° РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЏ
+' Р¤СѓРЅРєС†РёСЏ РЅРµ РіР°СЂР°РЅС‚РёСЂСѓРµС‚ РїРѕР»РЅРѕРіРѕ СѓРґР°Р»РµРЅРёСЏ РїСЂРѕРјРµР¶СѓС‚РѕС‡РЅС‹С… Рї/СЃС‚Р°РЅС†РёР№, РµРµ РЅСѓР¶РЅРѕ РІС‹Р·С‹РІР°С‚СЊ
+' РґРѕ С‚РµС… РїРѕСЂ, РїРѕРєР° РЅРµ Р±СѓРґРµС‚ СЃРґРµР»Р°РЅРѕ РЅРёРєР°РєРёС… РёР·РјРµРЅРµРЅРёР№ (С„СѓРЅРєС†РёСЏ РІРѕР·РІСЂР°С‰Р°РµС‚ РєРѕР»РёС‡РµСЃС‚РІРѕ
+' СѓРґР°Р»РµРЅРЅС‹С… СѓР·Р»РѕРІ
 '
 
   Dim i, j, n As Long
-  Dim Node As Long
+  Dim Node As String
   Dim NodeBranch()
-  Dim NodePosA, NodePosB As Long
-  Dim ContrNodeA, ContrNodeB As Long
+  Dim NodePosA, NodePosB As String
+  Dim ContrNodeA, ContrNodeB As String
   Dim DestType, DestElement As Long
 
   j = 0
@@ -691,15 +691,15 @@ Private Function Delete_Interm_Nodes(Without As Long) As Long
       NodeBranch = Find_Branch_By_Node(arrBranchCopy, Node)
       If Array_Exists(NodeBranch) Then
         n = UBound(NodeBranch)
-        ' Промежуточные узлы
+        ' РџСЂРѕРјРµР¶СѓС‚РѕС‡РЅС‹Рµ СѓР·Р»С‹
         If n = 1 Then
-          ' В ветвях текущего узла найдем позицию текущего узла, чтобы выкинуть из ветвей текущий узел
+          ' Р’ РІРµС‚РІСЏС… С‚РµРєСѓС‰РµРіРѕ СѓР·Р»Р° РЅР°Р№РґРµРј РїРѕР·РёС†РёСЋ С‚РµРєСѓС‰РµРіРѕ СѓР·Р»Р°, С‡С‚РѕР±С‹ РІС‹РєРёРЅСѓС‚СЊ РёР· РІРµС‚РІРµР№ С‚РµРєСѓС‰РёР№ СѓР·РµР»
           If arrBranchCopy(NodeBranch(0), 3) = Node Then NodePosA = 3
           If arrBranchCopy(NodeBranch(0), 4) = Node Then NodePosA = 4
           If arrBranchCopy(NodeBranch(1), 3) = Node Then NodePosB = 3
           If arrBranchCopy(NodeBranch(1), 4) = Node Then NodePosB = 4
 
-          ' Найдем противоположные узлы (номера узлов)
+          ' РќР°Р№РґРµРј РїСЂРѕС‚РёРІРѕРїРѕР»РѕР¶РЅС‹Рµ СѓР·Р»С‹ (РЅРѕРјРµСЂР° СѓР·Р»РѕРІ)
           If arrBranchCopy(NodeBranch(0), 3) = Node Then
             ContrNodeA = arrBranchCopy(NodeBranch(0), 4)
           Else
@@ -711,19 +711,19 @@ Private Function Delete_Interm_Nodes(Without As Long) As Long
             ContrNodeB = arrBranchCopy(NodeBranch(1), 3)
           End If
           If ContrNodeA <> ContrNodeB Then
-            ' Если с одной из сторон от промежуточного узла ветвь была 3 или 4 типа - результирующая
-            ' ветвь должна тоже быть генератором или трансформатором
+            ' Р•СЃР»Рё СЃ РѕРґРЅРѕР№ РёР· СЃС‚РѕСЂРѕРЅ РѕС‚ РїСЂРѕРјРµР¶СѓС‚РѕС‡РЅРѕРіРѕ СѓР·Р»Р° РІРµС‚РІСЊ Р±С‹Р»Р° 3 РёР»Рё 4 С‚РёРїР° - СЂРµР·СѓР»СЊС‚РёСЂСѓСЋС‰Р°СЏ
+            ' РІРµС‚РІСЊ РґРѕР»Р¶РЅР° С‚РѕР¶Рµ Р±С‹С‚СЊ РіРµРЅРµСЂР°С‚РѕСЂРѕРј РёР»Рё С‚СЂР°РЅСЃС„РѕСЂРјР°С‚РѕСЂРѕРј
             DestType = 0
-            ' Копируем тип ветви
+            ' РљРѕРїРёСЂСѓРµРј С‚РёРї РІРµС‚РІРё
             If (arrBranchCopy(NodeBranch(0), 1) > 1) Then DestType = arrBranchCopy(NodeBranch(0), 1)
             If (arrBranchCopy(NodeBranch(1), 1) > 1) Then DestType = arrBranchCopy(NodeBranch(1), 1)
-            ' Номер элемента распространяется от Without (это RootNode), чтобы
-            ' потом можно было легко определить присоединение от RootNode, идущее к питающему узлу
+            ' РќРѕРјРµСЂ СЌР»РµРјРµРЅС‚Р° СЂР°СЃРїСЂРѕСЃС‚СЂР°РЅСЏРµС‚СЃСЏ РѕС‚ Without (СЌС‚Рѕ RootNode), С‡С‚РѕР±С‹
+            ' РїРѕС‚РѕРј РјРѕР¶РЅРѕ Р±С‹Р»Рѕ Р»РµРіРєРѕ РѕРїСЂРµРґРµР»РёС‚СЊ РїСЂРёСЃРѕРµРґРёРЅРµРЅРёРµ РѕС‚ RootNode, РёРґСѓС‰РµРµ Рє РїРёС‚Р°СЋС‰РµРјСѓ СѓР·Р»Сѓ
             DestElement = 0
             If (arrBranchCopy(NodeBranch(0), 3) = Without) Or (arrBranchCopy(NodeBranch(0), 4) = Without) Then DestElement = arrBranchCopy(NodeBranch(0), 5)
             If (arrBranchCopy(NodeBranch(1), 3) = Without) Or (arrBranchCopy(NodeBranch(1), 4) = Without) Then DestElement = arrBranchCopy(NodeBranch(1), 5)
 
-            ' Изменения
+            ' РР·РјРµРЅРµРЅРёСЏ
             If (DestType = 0) Or (DestType = 3) Then
               arrBranchCopy(NodeBranch(0), 1) = DestType
               arrBranchCopy(NodeBranch(0), NodePosA) = ContrNodeB
@@ -735,14 +735,14 @@ Private Function Delete_Interm_Nodes(Without As Long) As Long
             End If
           End If
         End If
-        ' Тупики (узлы, которые входят только в одну ветвь)
+        ' РўСѓРїРёРєРё (СѓР·Р»С‹, РєРѕС‚РѕСЂС‹Рµ РІС…РѕРґСЏС‚ С‚РѕР»СЊРєРѕ РІ РѕРґРЅСѓ РІРµС‚РІСЊ)
         If n = 0 Then
           arrBranchCopy(NodeBranch(0), 3) = 0
           arrBranchCopy(NodeBranch(0), 4) = 0
         End If
       End If
     End If
-    DoEvents     ' Для того, чтобы работал выход по  Ctrl+C
+    DoEvents     ' Р”Р»СЏ С‚РѕРіРѕ, С‡С‚РѕР±С‹ СЂР°Р±РѕС‚Р°Р» РІС‹С…РѕРґ РїРѕ  Ctrl+C
   Next
   Delete_Interm_Nodes = j
 
@@ -751,26 +751,26 @@ End Function
 
 Private Sub Find_Power_Nodes()
 '
-' Поиск питающих узлов для RootNode
+' РџРѕРёСЃРє РїРёС‚Р°СЋС‰РёС… СѓР·Р»РѕРІ РґР»СЏ RootNode
 '
 
   Dim i, j, n, k, l As Long
 
-  ' Удаляем сразу ветви с 101 типом (отключенный ШСВ)
+  ' РЈРґР°Р»СЏРµРј СЃСЂР°Р·Сѓ РІРµС‚РІРё СЃ 101 С‚РёРїРѕРј (РѕС‚РєР»СЋС‡РµРЅРЅС‹Р№ РЁРЎР’)
   For i = LBound(arrBranchCopy) To UBound(arrBranchCopy)
     If arrBranchCopy(i, 1) = 101 Then
       arrBranchCopy(i, 3) = 0
       arrBranchCopy(i, 4) = 0
     End If
-    ' Также затираем номера элементов в копиях таблицы ветвей
+    ' РўР°РєР¶Рµ Р·Р°С‚РёСЂР°РµРј РЅРѕРјРµСЂР° СЌР»РµРјРµРЅС‚РѕРІ РІ РєРѕРїРёСЏС… С‚Р°Р±Р»РёС†С‹ РІРµС‚РІРµР№
     arrBranchCopy(i, 5) = 0
     arrBranchCopy2(i, 5) = 0
   Next
 
-  ' Пройдем по присоединениям RootNode и проставим отходящим от него ветвям уникальный номер
-  ' элемента. При удалении промежуточных подстанций в Delete_Interm_Nodes()
-  ' если один из узлов ветви = RootNode его номер элемента будет распространяться на вновь
-  ' образованную ветвь
+  ' РџСЂРѕР№РґРµРј РїРѕ РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЏРј RootNode Рё РїСЂРѕСЃС‚Р°РІРёРј РѕС‚С…РѕРґСЏС‰РёРј РѕС‚ РЅРµРіРѕ РІРµС‚РІСЏРј СѓРЅРёРєР°Р»СЊРЅС‹Р№ РЅРѕРјРµСЂ
+  ' СЌР»РµРјРµРЅС‚Р°. РџСЂРё СѓРґР°Р»РµРЅРёРё РїСЂРѕРјРµР¶СѓС‚РѕС‡РЅС‹С… РїРѕРґСЃС‚Р°РЅС†РёР№ РІ Delete_Interm_Nodes()
+  ' РµСЃР»Рё РѕРґРёРЅ РёР· СѓР·Р»РѕРІ РІРµС‚РІРё = RootNode РµРіРѕ РЅРѕРјРµСЂ СЌР»РµРјРµРЅС‚Р° Р±СѓРґРµС‚ СЂР°СЃРїСЂРѕСЃС‚СЂР°РЅСЏС‚СЊСЃСЏ РЅР° РІРЅРѕРІСЊ
+  ' РѕР±СЂР°Р·РѕРІР°РЅРЅСѓСЋ РІРµС‚РІСЊ
 
   For i = LBound(arrRootBranch) To UBound(arrRootBranch)
     arrBranchCopy(arrRootBranch(i), 5) = i + 1
@@ -779,11 +779,11 @@ Private Sub Find_Power_Nodes()
 
   Do
     j = 0
-    ' Удаляем промежуточные узлы и тупики (узлы только с одной ветвью)
+    ' РЈРґР°Р»СЏРµРј РїСЂРѕРјРµР¶СѓС‚РѕС‡РЅС‹Рµ СѓР·Р»С‹ Рё С‚СѓРїРёРєРё (СѓР·Р»С‹ С‚РѕР»СЊРєРѕ СЃ РѕРґРЅРѕР№ РІРµС‚РІСЊСЋ)
     n = Delete_Interm_Nodes(RootNode)
     j = j + n
 
-    ' Удаляем тупики в виде нейтралей и тр-ров на ноль (ТСН), но не генераторы
+    ' РЈРґР°Р»СЏРµРј С‚СѓРїРёРєРё РІ РІРёРґРµ РЅРµР№С‚СЂР°Р»РµР№ Рё С‚СЂ-СЂРѕРІ РЅР° РЅРѕР»СЊ (РўРЎРќ), РЅРѕ РЅРµ РіРµРЅРµСЂР°С‚РѕСЂС‹
     For i = LBound(arrBranchCopy) To UBound(arrBranchCopy)
       If (arrBranchCopy(i, 1) <> 4) And (arrBranchCopy(i, 1) <> 3) Then
         If (arrBranchCopy(i, 3) = 0) And (arrBranchCopy(i, 4) <> 0) Then
@@ -798,10 +798,10 @@ Private Sub Find_Power_Nodes()
     Next
   Loop While j > 0
 
-  ' Ищем противоположные узлы
+  ' РС‰РµРј РїСЂРѕС‚РёРІРѕРїРѕР»РѕР¶РЅС‹Рµ СѓР·Р»С‹
   Dim list()
   Dim NodeBranch()
-  Dim DestNode As Long
+  Dim DestNode As String
   Dim R As Boolean
 
   j = 0
@@ -814,8 +814,8 @@ Private Sub Find_Power_Nodes()
       Else
         DestNode = arrBranchCopy(NodeBranch(i), 3)
       End If
-      ' Не добавляем дубликаты, которые могут появиться из за шутнирования СВ линиями (кольца)
-      If (Array_Find(list, DestNode) = -1) And (DestNode <> 0) Then
+      ' РќРµ РґРѕР±Р°РІР»СЏРµРј РґСѓР±Р»РёРєР°С‚С‹, РєРѕС‚РѕСЂС‹Рµ РјРѕРіСѓС‚ РїРѕСЏРІРёС‚СЊСЃСЏ РёР· Р·Р° С€СѓС‚РЅРёСЂРѕРІР°РЅРёСЏ РЎР’ Р»РёРЅРёСЏРјРё (РєРѕР»СЊС†Р°)
+      If (Array_Find(list, DestNode) = -1) And (DestNode <> "0") Then
         ReDim Preserve list(j)
         list(j) = DestNode
         j = j + 1
@@ -823,21 +823,24 @@ Private Sub Find_Power_Nodes()
     Next
   End If
 
-  Dim PowerNode, e As Long
-  Dim SecondNode As Long
-  Dim Elem(), n_node, n_branch
+  Dim PowerNode As String
+  Dim SecondNode As String
+  Dim e As Long
+  Dim Elem()
+  Dim n_node As String
+  Dim n_branch As String
   l = 0
 
-  ' Подготовим номера питающих узлов и первую ветвь присоединения до них
+  ' РџРѕРґРіРѕС‚РѕРІРёРј РЅРѕРјРµСЂР° РїРёС‚Р°СЋС‰РёС… СѓР·Р»РѕРІ Рё РїРµСЂРІСѓСЋ РІРµС‚РІСЊ РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЏ РґРѕ РЅРёС…
   NodeBranch = Find_Branch_By_Node(arrBranchCopy2, RootNode)
   For i = LBound(list) To UBound(list)
     PowerNode = list(i)
-    ' Найдем номер(а) элементов, в которые входят RootNode и PowerNode, если к питающему узлу идет не одна цепь
-    ' этих элементов может быть несколько
+    ' РќР°Р№РґРµРј РЅРѕРјРµСЂ(Р°) СЌР»РµРјРµРЅС‚РѕРІ, РІ РєРѕС‚РѕСЂС‹Рµ РІС…РѕРґСЏС‚ RootNode Рё PowerNode, РµСЃР»Рё Рє РїРёС‚Р°СЋС‰РµРјСѓ СѓР·Р»Сѓ РёРґРµС‚ РЅРµ РѕРґРЅР° С†РµРїСЊ
+    ' СЌС‚РёС… СЌР»РµРјРµРЅС‚РѕРІ РјРѕР¶РµС‚ Р±С‹С‚СЊ РЅРµСЃРєРѕР»СЊРєРѕ
     Elem = Find_Element_By_2Node(arrBranchCopy, RootNode, PowerNode)
     If Array_Exists(Elem) Then
       n = UBound(Elem)
-      ' Найдем среди присоединений RootNode присоединение с элементом Elem
+      ' РќР°Р№РґРµРј СЃСЂРµРґРё РїСЂРёСЃРѕРµРґРёРЅРµРЅРёР№ RootNode РїСЂРёСЃРѕРµРґРёРЅРµРЅРёРµ СЃ СЌР»РµРјРµРЅС‚РѕРј Elem
       For j = LBound(Elem) To n
         e = Elem(j)
         For k = LBound(NodeBranch) To UBound(NodeBranch)
@@ -847,11 +850,11 @@ Private Sub Find_Power_Nodes()
             Else
               SecondNode = arrBranchCopy2(NodeBranch(k), 3)
             End If
-            n_node = Trim(Find_Node(list(i)))                                       ' ???
-            n_branch = Find_Branch_By_2Node(arrBranch, RootNode, SecondNode)        ' ???
-            n_branch = arrBranch(n_branch, 5)                                       ' ???
-            n_branch = Trim(Find_Element(n_branch))                                 ' ???
-            ' Добавим питающий узел и первую ветвь до него в arrPowerNodes()
+            'n_node = Trim$(Find_Node(list(i)))                                       ' ???
+            'n_branch = Find_Branch_By_2Node(arrBranch, RootNode, SecondNode)        ' ???
+            'n_branch = arrBranch(n_branch, 5)                                       ' ???
+            'n_branch = Find_Element(n_branch)                                       ' ???
+            ' Р”РѕР±Р°РІРёРј РїРёС‚Р°СЋС‰РёР№ СѓР·РµР» Рё РїРµСЂРІСѓСЋ РІРµС‚РІСЊ РґРѕ РЅРµРіРѕ РІ arrPowerNodes()
             ReDim Preserve arrPowerNodes(l)
             arrPowerNodes(l) = Array(PowerNode, RootNode, SecondNode)
             l = l + 1
@@ -866,80 +869,85 @@ End Sub
 
 Private Function Get_Testing_Code() As String
 '
-' Подготовка приказа для оценки чувствительности ДЗШ в режиме опробования.
-' Для каждого питающего узла создаем подрежим в котором отключаем все присоединения
-' RootNode кроме ведущей к PowerNode ветви и на основе каждого такого режима создаем
-' подрежимы в которых отключаем по одному присоединению питающего узла
+' РџРѕРґРіРѕС‚РѕРІРєР° РїСЂРёРєР°Р·Р° РґР»СЏ РѕС†РµРЅРєРё С‡СѓРІСЃС‚РІРёС‚РµР»СЊРЅРѕСЃС‚Рё Р”Р—РЁ РІ СЂРµР¶РёРјРµ РѕРїСЂРѕР±РѕРІР°РЅРёСЏ.
+' Р”Р»СЏ РєР°Р¶РґРѕРіРѕ РїРёС‚Р°СЋС‰РµРіРѕ СѓР·Р»Р° СЃРѕР·РґР°РµРј РїРѕРґСЂРµР¶РёРј РІ РєРѕС‚РѕСЂРѕРј РѕС‚РєР»СЋС‡Р°РµРј РІСЃРµ РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЏ
+' RootNode РєСЂРѕРјРµ РІРµРґСѓС‰РµР№ Рє PowerNode РІРµС‚РІРё Рё РЅР° РѕСЃРЅРѕРІРµ РєР°Р¶РґРѕРіРѕ С‚Р°РєРѕРіРѕ СЂРµР¶РёРјР° СЃРѕР·РґР°РµРј
+' РїРѕРґСЂРµР¶РёРјС‹ РІ РєРѕС‚РѕСЂС‹С… РѕС‚РєР»СЋС‡Р°РµРј РїРѕ РѕРґРЅРѕРјСѓ РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЋ РїРёС‚Р°СЋС‰РµРіРѕ СѓР·Р»Р°
 '
 
   Dim R As String
   Dim i, j, k As Long
 
   R = _
-    "*         ПРОВЕРКА ЧУВСТВИТЕЛЬНОСТИ ДЗШ ПРИ ОПРОБОВАНИИ, УЗЕЛ " & RootNode & " [" & Find_Node(RootNode) & "]" & vbCrLf & _
-    "ВЕЛИЧИНА  IA IB IC" & vbCrLf & _
-    "1-ПОЯС    " & RootNode & "      /* " & Find_Node(RootNode) & vbCrLf & _
-    "СНСМ      1" & vbCrLf & _
-    "ЗАМ-ФАЗ   " & RootNode & "/ABC" & vbCrLf & _
-    "СНСМ      2" & vbCrLf & _
-    "ЗАМ-ФАЗ   " & RootNode & "/AB" & vbCrLf & _
-    "СНСМ      3" & vbCrLf & _
-    "ЗАМ-ФАЗ   " & RootNode & "/AB0" & vbCrLf & _
-    "СНСМ      4" & vbCrLf & _
-    "ЗАМ-ФАЗ   " & RootNode & "/A0" & vbCrLf
+    "*         РџР РћР’Р•Р РљРђ Р§РЈР’РЎРўР’РРўР•Р›Р¬РќРћРЎРўР Р”Р—РЁ РџР Р РћРџР РћР‘РћР’РђРќРР, РЈР—Р•Р› " & RootNode & " [" & Find_Node(RootNode) & "]" & vbCrLf & _
+    "Р’Р•Р›РР§РРќРђ  IA IB IC" & vbCrLf & _
+    "1-РџРћРЇРЎ    " & RootNode & "      /* " & Find_Node(RootNode) & vbCrLf & _
+    "РЎРќРЎРњ      1" & vbCrLf & _
+    "Р—РђРњ-Р¤РђР—   " & RootNode & "/ABC" & vbCrLf & _
+    "РЎРќРЎРњ      2" & vbCrLf & _
+    "Р—РђРњ-Р¤РђР—   " & RootNode & "/AB" & vbCrLf & _
+    "РЎРќРЎРњ      3" & vbCrLf & _
+    "Р—РђРњ-Р¤РђР—   " & RootNode & "/AB0" & vbCrLf & _
+    "РЎРќРЎРњ      4" & vbCrLf & _
+    "Р—РђРњ-Р¤РђР—   " & RootNode & "/A0" & vbCrLf
 
   Dim BaseRejim, Podrejim As Long
-  Dim PowerNode, NodeA, NodeB, CrossNode, T As Long
+  Dim PowerNode As String
+  Dim NodeA As String
+  Dim NodeB As String
+  Dim CrossNode As String
+  Dim T As Long
   Dim branchNo As Long
   Dim ElemName As String
   Dim NodeBranch()
-  Dim Elem, rElem As Long
+  Dim Elem As Long
+  Dim rElem As Long
   Dim Collision As Boolean
 
   Podrejim = 1
-  ' Проходим по всем присоединениям, указанным в списке (присоединения к питающему узлу)
+  ' РџСЂРѕС…РѕРґРёРј РїРѕ РІСЃРµРј РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЏРј, СѓРєР°Р·Р°РЅРЅС‹Рј РІ СЃРїРёСЃРєРµ (РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЏ Рє РїРёС‚Р°СЋС‰РµРјСѓ СѓР·Р»Сѓ)
   For i = LBound(arrPowerNodes) To UBound(arrPowerNodes)
     PowerNode = arrPowerNodes(i)(0)
     NodeA = arrPowerNodes(i)(1) ' RootNode
-    NodeB = arrPowerNodes(i)(2) ' номер противоположного узла первой ветви присоединения к питающему узлу
+    NodeB = arrPowerNodes(i)(2) ' РЅРѕРјРµСЂ РїСЂРѕС‚РёРІРѕРїРѕР»РѕР¶РЅРѕРіРѕ СѓР·Р»Р° РїРµСЂРІРѕР№ РІРµС‚РІРё РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЏ Рє РїРёС‚Р°СЋС‰РµРјСѓ СѓР·Р»Сѓ
     R = R & vbCrLf
-    R = R & "ПОДРЕЖИМ  " & Podrejim & " /* " & PowerNode & " (" & Find_Node(PowerNode) & ")" & vbCrLf
+    R = R & "РџРћР”Р Р•Р–РРњ  " & Podrejim & " /* " & PowerNode & " (" & Find_Node(PowerNode) & ")" & vbCrLf
     BaseRejim = Podrejim
-    ' Запишем название базового режима, чтобы можно было это вписать в результирующий лист,
-    ' из протокола эту информацию не достать
+    ' Р—Р°РїРёС€РµРј РЅР°Р·РІР°РЅРёРµ Р±Р°Р·РѕРІРѕРіРѕ СЂРµР¶РёРјР°, С‡С‚РѕР±С‹ РјРѕР¶РЅРѕ Р±С‹Р»Рѕ СЌС‚Рѕ РІРїРёСЃР°С‚СЊ РІ СЂРµР·СѓР»СЊС‚РёСЂСѓСЋС‰РёР№ Р»РёСЃС‚,
+    ' РёР· РїСЂРѕС‚РѕРєРѕР»Р° СЌС‚Сѓ РёРЅС„РѕСЂРјР°С†РёСЋ РЅРµ РґРѕСЃС‚Р°С‚СЊ
     ReDim Preserve arrBaseRejims(i)
     branchNo = Find_Branch_By_2Node(arrBranch, NodeA, NodeB)
-    ElemName = Find_Element(arrBranch(branchNo, 5))
+    ElemName = Find_Element(Int(arrBranch(branchNo, 5)))
     arrBaseRejims(i) = Array(BaseRejim, Find_Node(PowerNode) & " (" & ElemName & ")")
       
-    ' Пройдемся по всем присоединениям RootNode
+    ' РџСЂРѕР№РґРµРјСЃСЏ РїРѕ РІСЃРµРј РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЏРј RootNode
     For j = LBound(arrRootBranch) To UBound(arrRootBranch)
-      ' Для ветвей, отходящих от RootNode найдем номер противоположного узла
+      ' Р”Р»СЏ РІРµС‚РІРµР№, РѕС‚С…РѕРґСЏС‰РёС… РѕС‚ RootNode РЅР°Р№РґРµРј РЅРѕРјРµСЂ РїСЂРѕС‚РёРІРѕРїРѕР»РѕР¶РЅРѕРіРѕ СѓР·Р»Р°
       If arrBranch(arrRootBranch(j), 3) = RootNode Then
         CrossNode = arrBranch(arrRootBranch(j), 4)
       Else
         CrossNode = arrBranch(arrRootBranch(j), 3)
       End If
-      ' Отключаем все присоединения, кроме ведущего к питающему узлу
+      ' РћС‚РєР»СЋС‡Р°РµРј РІСЃРµ РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЏ, РєСЂРѕРјРµ РІРµРґСѓС‰РµРіРѕ Рє РїРёС‚Р°СЋС‰РµРјСѓ СѓР·Р»Сѓ
       If CrossNode = NodeB Then
-        ' Для справки выводим коммутацию в комментарии
+        ' Р”Р»СЏ СЃРїСЂР°РІРєРё РІС‹РІРѕРґРёРј РєРѕРјРјСѓС‚Р°С†РёСЋ РІ РєРѕРјРјРµРЅС‚Р°СЂРёРё
         R = R & "*"
       End If
-      R = R & "ОТКЛ      *" & RootNode & "-" & CrossNode & _
-      "      /* Элемент " & arrBranch(arrRootBranch(j), 5) & " (" & _
-      Find_Element(arrBranch(arrRootBranch(j), 5)) & "), Ветвь (" & _
-      Find_Node(arrBranch(arrRootBranch(j), 3)) & " - " & Find_Node(arrBranch(arrRootBranch(j), 4)) & _
+      R = R & "РћРўРљР›      *" & RootNode & "-" & CrossNode & _
+      "      /* Р­Р»РµРјРµРЅС‚ " & arrBranch(arrRootBranch(j), 5) & " (" & _
+      Find_Element(Int(arrBranch(arrRootBranch(j), 5))) & "), Р’РµС‚РІСЊ (" & _
+      Find_Node(Trim$(arrBranch(Int(arrRootBranch(j)), 3))) & " - " & Find_Node(Trim$(arrBranch(Int(arrRootBranch(j)), 4))) & _
       ")" & vbCrLf
     Next
     
-    ' Найдем все присоединения питающего узла и отключим каждое в отдельном подрежиме, основанном на BaseRejim
+    ' РќР°Р№РґРµРј РІСЃРµ РїСЂРёСЃРѕРµРґРёРЅРµРЅРёСЏ РїРёС‚Р°СЋС‰РµРіРѕ СѓР·Р»Р° Рё РѕС‚РєР»СЋС‡РёРј РєР°Р¶РґРѕРµ РІ РѕС‚РґРµР»СЊРЅРѕРј РїРѕРґСЂРµР¶РёРјРµ, РѕСЃРЅРѕРІР°РЅРЅРѕРј РЅР° BaseRejim
     NodeBranch = Find_Branch_By_Node(arrBranch, PowerNode)
     For j = LBound(NodeBranch) To UBound(NodeBranch)
       T = arrBranch(NodeBranch(j), 1)
       
-      ' Issue#2: Проверим, что ветвь, отходящая от питающего узла, которую мы хотим отключить,
-      ' не ведет к RootNode (все ветви RootNode кроме одной отключены в базовом режиме)
-      Elem = arrBranch(NodeBranch(j), 5)  ' Номер элемента той ветви от PowerNode, которую хотим отключить
+      ' Issue#2: РџСЂРѕРІРµСЂРёРј, С‡С‚Рѕ РІРµС‚РІСЊ, РѕС‚С…РѕРґСЏС‰Р°СЏ РѕС‚ РїРёС‚Р°СЋС‰РµРіРѕ СѓР·Р»Р°, РєРѕС‚РѕСЂСѓСЋ РјС‹ С…РѕС‚РёРј РѕС‚РєР»СЋС‡РёС‚СЊ,
+      ' РЅРµ РІРµРґРµС‚ Рє RootNode (РІСЃРµ РІРµС‚РІРё RootNode РєСЂРѕРјРµ РѕРґРЅРѕР№ РѕС‚РєР»СЋС‡РµРЅС‹ РІ Р±Р°Р·РѕРІРѕРј СЂРµР¶РёРјРµ)
+      Elem = arrBranch(NodeBranch(j), 5)  ' РќРѕРјРµСЂ СЌР»РµРјРµРЅС‚Р° С‚РѕР№ РІРµС‚РІРё РѕС‚ PowerNode, РєРѕС‚РѕСЂСѓСЋ С…РѕС‚РёРј РѕС‚РєР»СЋС‡РёС‚СЊ
       Collision = False
       For k = LBound(arrRootBranch) To UBound(arrRootBranch)
         rElem = arrBranch(arrRootBranch(k), 5)
@@ -948,10 +956,10 @@ Private Function Get_Testing_Code() As String
           Exit For
         End If
       Next
-      ' Issue#8: Незачем отключать отключенные ШСВ
+      ' Issue#8: РќРµР·Р°С‡РµРј РѕС‚РєР»СЋС‡Р°С‚СЊ РѕС‚РєР»СЋС‡РµРЅРЅС‹Рµ РЁРЎР’
       If (T <> 101) And Not Collision Then
         Podrejim = Podrejim + 1
-        R = R & "ПОДРЕЖИМ  " & Podrejim & " " & BaseRejim & vbCrLf
+        R = R & "РџРћР”Р Р•Р–РРњ  " & Podrejim & " " & BaseRejim & vbCrLf
         NodeA = arrBranch(NodeBranch(j), 3)
         NodeB = arrBranch(NodeBranch(j), 4)
                
@@ -962,10 +970,10 @@ Private Function Get_Testing_Code() As String
         End If
       
         If Elem = 0 Then
-          R = R & "ОТКЛ      *" & PowerNode & "-" & CrossNode & _
+          R = R & "РћРўРљР›      *" & PowerNode & "-" & CrossNode & _
           " /* " & Find_Node(PowerNode) & " - " & Find_Node(CrossNode) & vbCrLf
         Else
-          R = R & "ЭЛЕМЕНТ   " & Elem & _
+          R = R & "Р­Р›Р•РњР•РќРў   " & Elem & _
           " /* " & Find_Element(Elem) & vbCrLf
         End If
       End If
@@ -981,14 +989,14 @@ End Function
 
 Private Function Is_Sub_Rejim(Protokol, CurPos)
 '
-' Проверка стоим ли сейчас в подрежиме, основанном на другом режиме
-' (ремонт или отключение на питающем узле)
+' РџСЂРѕРІРµСЂРєР° СЃС‚РѕРёРј Р»Рё СЃРµР№С‡Р°СЃ РІ РїРѕРґСЂРµР¶РёРјРµ, РѕСЃРЅРѕРІР°РЅРЅРѕРј РЅР° РґСЂСѓРіРѕРј СЂРµР¶РёРјРµ
+' (СЂРµРјРѕРЅС‚ РёР»Рё РѕС‚РєР»СЋС‡РµРЅРёРµ РЅР° РїРёС‚Р°СЋС‰РµРј СѓР·Р»Рµ)
 '
 
   Dim apos, bpos, cpos As Long
 
   Is_Sub_Rejim = False
-  apos = InStr(CurPos, Protokol, "Подрежим  ")
+  apos = InStr(CurPos, Protokol, "РџРѕРґСЂРµР¶РёРј  ")
 
   If apos > 0 Then
     bpos = InStr(apos + 10, Protokol, " ")
@@ -1001,7 +1009,7 @@ End Function
 
 Private Function Find_BaseRejim_Name(RejimNo)
 '
-' Ищем наименование режима из базовых режимов в arrBaseRejims()
+' РС‰РµРј РЅР°РёРјРµРЅРѕРІР°РЅРёРµ СЂРµР¶РёРјР° РёР· Р±Р°Р·РѕРІС‹С… СЂРµР¶РёРјРѕРІ РІ arrBaseRejims()
 '
 
   Dim i As Long
@@ -1019,19 +1027,19 @@ End Function
 
 Private Function Get_Rejim_Name(Protokol, CurPos)
 '
-' Если стоим на базовом подрежиме - берем его наименование,
-' если это субрежим - берем наименование отключаемого элемента
+' Р•СЃР»Рё СЃС‚РѕРёРј РЅР° Р±Р°Р·РѕРІРѕРј РїРѕРґСЂРµР¶РёРјРµ - Р±РµСЂРµРј РµРіРѕ РЅР°РёРјРµРЅРѕРІР°РЅРёРµ,
+' РµСЃР»Рё СЌС‚Рѕ СЃСѓР±СЂРµР¶РёРј - Р±РµСЂРµРј РЅР°РёРјРµРЅРѕРІР°РЅРёРµ РѕС‚РєР»СЋС‡Р°РµРјРѕРіРѕ СЌР»РµРјРµРЅС‚Р°
 '
 
   Dim apos, bpos As Long
   Dim Prefix As String
 
-  ' Найдем номер режима, если это подрежим - номер состоит из двух чисел,
-  ' если основной - одного
-  apos = InStr(CurPos, Protokol, "Подрежим")
+  ' РќР°Р№РґРµРј РЅРѕРјРµСЂ СЂРµР¶РёРјР°, РµСЃР»Рё СЌС‚Рѕ РїРѕРґСЂРµР¶РёРј - РЅРѕРјРµСЂ СЃРѕСЃС‚РѕРёС‚ РёР· РґРІСѓС… С‡РёСЃРµР»,
+  ' РµСЃР»Рё РѕСЃРЅРѕРІРЅРѕР№ - РѕРґРЅРѕРіРѕ
+  apos = InStr(CurPos, Protokol, "РџРѕРґСЂРµР¶РёРј")
   bpos = InStr(apos, Protokol, vbCrLf)
   If (apos > 0) And (bpos > apos) Then
-    Prefix = Trim(Mid(Protokol, apos + 8, bpos - apos - 8))
+    Prefix = Trim$(Mid(Protokol, apos + 8, bpos - apos - 8))
   End If
 
   apos = 0
@@ -1041,11 +1049,11 @@ Private Function Get_Rejim_Name(Protokol, CurPos)
     apos = InStr(CurPos, Protokol, "(")
     bpos = InStr(apos, Protokol, ")")
     If (apos > 0) And (bpos > apos) Then
-      Get_Rejim_Name = "[" & Prefix & "] +Откл " & Trim(Mid(Protokol, apos + 1, bpos - apos - 1))
+      Get_Rejim_Name = "[" & Prefix & "] +РћС‚РєР» " & Trim$(Mid(Protokol, apos + 1, bpos - apos - 1))
     End If
   Else
     apos = InStr(CurPos + 10, Protokol, vbCrLf)
-    Get_Rejim_Name = "[" & Prefix & "] " & Find_BaseRejim_Name(Trim(Mid(Protokol, CurPos + 10, apos - (CurPos + 10))))
+    Get_Rejim_Name = "[" & Prefix & "] " & Find_BaseRejim_Name(Trim$(Mid(Protokol, CurPos + 10, apos - (CurPos + 10))))
   End If
   
 End Function
@@ -1053,25 +1061,25 @@ End Function
 
 Private Sub Analiz_Testing(Protokol As String)
 '
-' Парсинг протокола по опробованию
+' РџР°СЂСЃРёРЅРі РїСЂРѕС‚РѕРєРѕР»Р° РїРѕ РѕРїСЂРѕР±РѕРІР°РЅРёСЋ
 '
 
   Dim objWorkbook, objRez
   Dim s, i As Long
 
-  ' Результаты быдем выводить в тот же лист, что и результаты по проверке чувствительности
-  ' в минимальном режиме
+  ' Р РµР·СѓР»СЊС‚Р°С‚С‹ Р±С‹РґРµРј РІС‹РІРѕРґРёС‚СЊ РІ С‚РѕС‚ Р¶Рµ Р»РёСЃС‚, С‡С‚Рѕ Рё СЂРµР·СѓР»СЊС‚Р°С‚С‹ РїРѕ РїСЂРѕРІРµСЂРєРµ С‡СѓРІСЃС‚РІРёС‚РµР»СЊРЅРѕСЃС‚Рё
+  ' РІ РјРёРЅРёРјР°Р»СЊРЅРѕРј СЂРµР¶РёРјРµ
   Set objWorkbook = ActiveWorkbook
   Set objRez = objWorkbook.ActiveSheet
   s = objRez.UsedRange.Rows.Count + 2
 
-  objRez.Cells(s, 1).Value = "ТКЗ для опробования"
-  objRez.Cells(s, 2).Value = "КЗ(3)"
-  objRez.Cells(s, 3).Value = "КЗ(2)"
-  objRez.Cells(s, 4).Value = "КЗ(1+1)"
-  objRez.Cells(s, 5).Value = "КЗ(1)"
+  objRez.Cells(s, 1).Value = "РўРљР— РґР»СЏ РѕРїСЂРѕР±РѕРІР°РЅРёСЏ"
+  objRez.Cells(s, 2).Value = "РљР—(3)"
+  objRez.Cells(s, 3).Value = "РљР—(2)"
+  objRez.Cells(s, 4).Value = "РљР—(1+1)"
+  objRez.Cells(s, 5).Value = "РљР—(1)"
 
-  ' Пройдемся по подрежимам
+  ' РџСЂРѕР№РґРµРјСЃСЏ РїРѕ РїРѕРґСЂРµР¶РёРјР°Рј
   Dim list()
   Dim j As Long
   Dim StartPos As Long
@@ -1079,8 +1087,8 @@ Private Sub Analiz_Testing(Protokol As String)
   Dim Line
   j = 0
 
-  StartPos = InStr(Protokol, "Р Е З У Л Ь Т А Т Ы    Р А С Ч Е Т А")
-  StartPos = InStr(StartPos, Protokol, "Подрежим  " & j + 1)
+  StartPos = InStr(Protokol, "Р  Р• Р— РЈ Р› Р¬ Рў Рђ Рў Р«    Р  Рђ РЎ Р§ Р• Рў Рђ")
+  StartPos = InStr(StartPos, Protokol, "РџРѕРґСЂРµР¶РёРј  " & j + 1)
 
   Do
     ReDim Preserve list(j)
@@ -1089,12 +1097,12 @@ Private Sub Analiz_Testing(Protokol As String)
       
     list(j) = Array(RejimName, Line)
     j = j + 1
-    StartPos = InStr(StartPos, Protokol, "Подрежим  " & j + 1)
-    DoEvents     ' Для того, чтобы работал выход по  Ctrl+C
+    StartPos = InStr(StartPos, Protokol, "РџРѕРґСЂРµР¶РёРј  " & j + 1)
+    DoEvents     ' Р”Р»СЏ С‚РѕРіРѕ, С‡С‚РѕР±С‹ СЂР°Р±РѕС‚Р°Р» РІС‹С…РѕРґ РїРѕ  Ctrl+C
   Loop While StartPos > 0
 
-  ' Массив наименований режимов и соответствующих токов заполнен, переносим его на лист
-  objRez.Cells(s, 1).Value = "ТКЗ для режима опробования"
+  ' РњР°СЃСЃРёРІ РЅР°РёРјРµРЅРѕРІР°РЅРёР№ СЂРµР¶РёРјРѕРІ Рё СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёС… С‚РѕРєРѕРІ Р·Р°РїРѕР»РЅРµРЅ, РїРµСЂРµРЅРѕСЃРёРј РµРіРѕ РЅР° Р»РёСЃС‚
+  objRez.Cells(s, 1).Value = "РўРљР— РґР»СЏ СЂРµР¶РёРјР° РѕРїСЂРѕР±РѕРІР°РЅРёСЏ"
   For i = LBound(list) To UBound(list)
     objRez.Cells(s + i + 1, 1).Value = list(i)(0)
     For j = 0 To 3
@@ -1105,7 +1113,7 @@ Private Sub Analiz_Testing(Protokol As String)
 End Sub
 
 
-'######################################################################################[Главный метод макроса]
+'######################################################################################[Р“Р»Р°РІРЅС‹Р№ РјРµС‚РѕРґ РјР°РєСЂРѕСЃР°]
 
 Public Sub Raschet_DZSH()
 '
@@ -1122,73 +1130,73 @@ Public Sub Raschet_DZSH()
   Dim ProcessWnd As Long
   Dim ManualMode As Boolean
 
-  ' Нажата ли Ctrl ?
+  ' РќР°Р¶Р°С‚Р° Р»Рё Ctrl ?
   ManualMode = CBool(GetKeyState(&H11) < 0)
 
-  ' Ищем окно ТКЗ-2000, если его нет выводим сообщение и завершаемся
+  ' РС‰РµРј РѕРєРЅРѕ РўРљР—-2000, РµСЃР»Рё РµРіРѕ РЅРµС‚ РІС‹РІРѕРґРёРј СЃРѕРѕР±С‰РµРЅРёРµ Рё Р·Р°РІРµСЂС€Р°РµРјСЃСЏ
   MainFormHandle = Find_TKZ_Window_Handle("TForm1")
   If MainFormHandle = 0 Then
-    MsgBox "Окно ТКЗ-2000 не найдено, приложение должно быть запущено. Кроме этого должна быть загружена сеть для расчета.", vbExclamation + vbOKOnly
+    MsgBox "РћРєРЅРѕ РўРљР—-2000 РЅРµ РЅР°Р№РґРµРЅРѕ, РїСЂРёР»РѕР¶РµРЅРёРµ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ Р·Р°РїСѓС‰РµРЅРѕ. РљСЂРѕРјРµ СЌС‚РѕРіРѕ РґРѕР»Р¶РЅР° Р±С‹С‚СЊ Р·Р°РіСЂСѓР¶РµРЅР° СЃРµС‚СЊ РґР»СЏ СЂР°СЃС‡РµС‚Р°.", vbExclamation + vbOKOnly
     Exit Sub
   End If
 
-  ' Инициализация, выбираем данные из листов
+  ' РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ, РІС‹Р±РёСЂР°РµРј РґР°РЅРЅС‹Рµ РёР· Р»РёСЃС‚РѕРІ
   Call Initialize
 
-  ' Получаем номер узла (вообще-то узел может быть не только числовой)
+  ' РџРѕР»СѓС‡Р°РµРј РЅРѕРјРµСЂ СѓР·Р»Р° (РІРѕРѕР±С‰Рµ-С‚Рѕ СѓР·РµР» РјРѕР¶РµС‚ Р±С‹С‚СЊ РЅРµ С‚РѕР»СЊРєРѕ С‡РёСЃР»РѕРІРѕР№)
   Dim Answer
-  Answer = InputBox("Номер узла (рассчитываемые шины)?", "RootNode", 0)
-  If Trim(Answer) = "" Then Exit Sub
-  RootNode = Int(Answer)
+  Answer = InputBox("РќРѕРјРµСЂ СѓР·Р»Р° (СЂР°СЃСЃС‡РёС‚С‹РІР°РµРјС‹Рµ С€РёРЅС‹)?", "RootNode", 0)
+  If Trim$(Answer) = "" Then Exit Sub
+  RootNode = Trim$(Answer)
   If Not Node_Exists(RootNode) Then
-    MsgBox "Узел " & RootNode & " не найден в сети, дальнейшая работа невозможна.", vbExclamation + vbOKOnly
+    MsgBox "РЈР·РµР» " & RootNode & " РЅРµ РЅР°Р№РґРµРЅ РІ СЃРµС‚Рё, РґР°Р»СЊРЅРµР№С€Р°СЏ СЂР°Р±РѕС‚Р° РЅРµРІРѕР·РјРѕР¶РЅР°.", vbExclamation + vbOKOnly
     Exit Sub
   End If
 
-  ' Отобразим маленький диалог
-  ProcessWnd = Show_Process_Window("Процесс идет, ждите...")
+  ' РћС‚РѕР±СЂР°Р·РёРј РјР°Р»РµРЅСЊРєРёР№ РґРёР°Р»РѕРі
+  ProcessWnd = Show_Process_Window("РџСЂРѕС†РµСЃСЃ РёРґРµС‚, Р¶РґРёС‚Рµ...")
 
-  ' Не проверяя в каком режиме работает программа (приказы или диалоговый расчет) выполним пункт меню
-  Call SendMessage(MainFormHandle, WM_COMMAND, 12, 0&)     ' "Расширенный формат задания для расчета..."
+  ' РќРµ РїСЂРѕРІРµСЂСЏСЏ РІ РєР°РєРѕРј СЂРµР¶РёРјРµ СЂР°Р±РѕС‚Р°РµС‚ РїСЂРѕРіСЂР°РјРјР° (РїСЂРёРєР°Р·С‹ РёР»Рё РґРёР°Р»РѕРіРѕРІС‹Р№ СЂР°СЃС‡РµС‚) РІС‹РїРѕР»РЅРёРј РїСѓРЅРєС‚ РјРµРЅСЋ
+  Call SendMessage(MainFormHandle, WM_COMMAND, 12, 0&)     ' "Р Р°СЃС€РёСЂРµРЅРЅС‹Р№ С„РѕСЂРјР°С‚ Р·Р°РґР°РЅРёСЏ РґР»СЏ СЂР°СЃС‡РµС‚Р°..."
 
-  ' Найдем окно диалога задания приказов
+  ' РќР°Р№РґРµРј РѕРєРЅРѕ РґРёР°Р»РѕРіР° Р·Р°РґР°РЅРёСЏ РїСЂРёРєР°Р·РѕРІ
   CommandFormHandle = Find_TKZ_Window_Handle("TFormZD2")
 
-  ' Откроем окно протокола и очистим его
-  Call SendMessage(CommandFormHandle, WM_COMMAND, 187, 0&) ' "Открыть протокол..."
-  Call SendMessage(CommandFormHandle, WM_COMMAND, 200, 0&) ' "Очистить задание"
+  ' РћС‚РєСЂРѕРµРј РѕРєРЅРѕ РїСЂРѕС‚РѕРєРѕР»Р° Рё РѕС‡РёСЃС‚РёРј РµРіРѕ
+  Call SendMessage(CommandFormHandle, WM_COMMAND, 190, 0&) ' "РћС‚РєСЂС‹С‚СЊ РїСЂРѕС‚РѕРєРѕР»..."
+  Call SendMessage(CommandFormHandle, WM_COMMAND, 203, 0&) ' "РћС‡РёСЃС‚РёС‚СЊ Р·Р°РґР°РЅРёРµ"
   ProtokolHandle = Find_TKZ_Window_Handle("TForm3")
   ProtokolMemo = Find_SubClass_Recurce(ProtokolHandle, "TMemo")
-  Call SendMessage(ProtokolHandle, WM_COMMAND, 247, 0&)    ' "Очистить протокол"
+  Call SendMessage(ProtokolHandle, WM_COMMAND, 250, 0&)    ' "РћС‡РёСЃС‚РёС‚СЊ РїСЂРѕС‚РѕРєРѕР»"
 
-  ' <<< Проверка чувствительности пусковых/избирательных органов
+  ' <<< РџСЂРѕРІРµСЂРєР° С‡СѓРІСЃС‚РІРёС‚РµР»СЊРЅРѕСЃС‚Рё РїСѓСЃРєРѕРІС‹С…/РёР·Р±РёСЂР°С‚РµР»СЊРЅС‹С… РѕСЂРіР°РЅРѕРІ
 
-  ' Готовим приказ для проверки чувствительности и копируем его в окно приказов ТКЗ-2000
+  ' Р“РѕС‚РѕРІРёРј РїСЂРёРєР°Р· РґР»СЏ РїСЂРѕРІРµСЂРєРё С‡СѓРІСЃС‚РІРёС‚РµР»СЊРЅРѕСЃС‚Рё Рё РєРѕРїРёСЂСѓРµРј РµРіРѕ РІ РѕРєРЅРѕ РїСЂРёРєР°Р·РѕРІ РўРљР—-2000
   CommandsText = Get_Sensitivity_Code()
   CommandRichEdit = Find_SubClass_Recurce(CommandFormHandle, "TRichEdit")
   Window_Set_Text CommandRichEdit, CommandsText
 
   If ManualMode Then MsgBox _
-  "В окно ввода приказов ТКЗ-2000 вставлен приказ ПРОВЕРКИ ЧУВСТВИТЕЛЬНОСТИ, подготовленный макросом, если Вы хотите изменить его," & _
-  "сделайте это." & vbCrLf & _
-  "Для продолжения работы макроса нажмите Ok"
+  "Р’ РѕРєРЅРѕ РІРІРѕРґР° РїСЂРёРєР°Р·РѕРІ РўРљР—-2000 РІСЃС‚Р°РІР»РµРЅ РїСЂРёРєР°Р· РџР РћР’Р•Р РљР Р§РЈР’РЎРўР’РРўР•Р›Р¬РќРћРЎРўР, РїРѕРґРіРѕС‚РѕРІР»РµРЅРЅС‹Р№ РјР°РєСЂРѕСЃРѕРј, РµСЃР»Рё Р’С‹ С…РѕС‚РёС‚Рµ РёР·РјРµРЅРёС‚СЊ РµРіРѕ," & _
+  "СЃРґРµР»Р°Р№С‚Рµ СЌС‚Рѕ." & vbCrLf & _
+  "Р”Р»СЏ РїСЂРѕРґРѕР»Р¶РµРЅРёСЏ СЂР°Р±РѕС‚С‹ РјР°РєСЂРѕСЃР° РЅР°Р¶РјРёС‚Рµ Ok"
 
-  ' Делаем расчет с эквивалентированием - это значительно быстрее
-  Call SendMessage(CommandFormHandle, WM_COMMAND, 179, 0&) ' "Расчет с эквиваленированием"
+  ' Р”РµР»Р°РµРј СЂР°СЃС‡РµС‚ СЃ СЌРєРІРёРІР°Р»РµРЅС‚РёСЂРѕРІР°РЅРёРµРј - СЌС‚Рѕ Р·РЅР°С‡РёС‚РµР»СЊРЅРѕ Р±С‹СЃС‚СЂРµРµ
+  Call SendMessage(CommandFormHandle, WM_COMMAND, 182, 0&) ' "Р Р°СЃС‡РµС‚ СЃ СЌРєРІРёРІР°Р»РµРЅРёСЂРѕРІР°РЅРёРµРј"
 
-  ' Заберем результат для анализа
+  ' Р—Р°Р±РµСЂРµРј СЂРµР·СѓР»СЊС‚Р°С‚ РґР»СЏ Р°РЅР°Р»РёР·Р°
   ProtokolText = Window_Get_Text(ProtokolMemo)
 
-  ' Анализ протокола расчета
+  ' РђРЅР°Р»РёР· РїСЂРѕС‚РѕРєРѕР»Р° СЂР°СЃС‡РµС‚Р°
   Analiz_Sensitivity ProtokolText
 
-  ' Предложить пользователю сохранить расширенный протокол (вначале добавлен исходный приказ с комментариями)
+  ' РџСЂРµРґР»РѕР¶РёС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ СЃРѕС…СЂР°РЅРёС‚СЊ СЂР°СЃС€РёСЂРµРЅРЅС‹Р№ РїСЂРѕС‚РѕРєРѕР» (РІРЅР°С‡Р°Р»Рµ РґРѕР±Р°РІР»РµРЅ РёСЃС…РѕРґРЅС‹Р№ РїСЂРёРєР°Р· СЃ РєРѕРјРјРµРЅС‚Р°СЂРёСЏРјРё)
   ProtokolText = CommandsText & vbCrLf & "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" & vbCrLf & ProtokolText
 
   Dim filePRT
   Dim FrFi As Integer
 
-  filePRT = Application.GetSaveAsFilename(ActiveWorkbook.Path & "\Чувствительность " & RootNode & " узел.prt", "Файлы протокола АРМ (*.prt), *.prt")
+  filePRT = Application.GetSaveAsFilename(ActiveWorkbook.Path & "\Р§СѓРІСЃС‚РІРёС‚РµР»СЊРЅРѕСЃС‚СЊ " & RootNode & " СѓР·РµР».prt", "Р¤Р°Р№Р»С‹ РїСЂРѕС‚РѕРєРѕР»Р° РђР Рњ (*.prt), *.prt")
   If filePRT <> "False" Then
     FrFi = FreeFile
     Open filePRT For Output As FrFi
@@ -1196,35 +1204,35 @@ Public Sub Raschet_DZSH()
     Close FrFi
   End If
 
-  ' <<< Проверка чувствительности в режиме опробования
+  ' <<< РџСЂРѕРІРµСЂРєР° С‡СѓРІСЃС‚РІРёС‚РµР»СЊРЅРѕСЃС‚Рё РІ СЂРµР¶РёРјРµ РѕРїСЂРѕР±РѕРІР°РЅРёСЏ
 
-  ' Готовим приказ для проверки опробования
+  ' Р“РѕС‚РѕРІРёРј РїСЂРёРєР°Р· РґР»СЏ РїСЂРѕРІРµСЂРєРё РѕРїСЂРѕР±РѕРІР°РЅРёСЏ
   Call Find_Power_Nodes
 
   CommandsText = Get_Testing_Code()
   
-  ' Очистим протокол и окно приказов, скопируем приказ и выполним его
-  Call SendMessage(ProtokolHandle, WM_COMMAND, 247, 0&)    ' "Очистить протокол"
-  Call SendMessage(CommandFormHandle, WM_COMMAND, 200, 0&) ' "Очистить задание"
+  ' РћС‡РёСЃС‚РёРј РїСЂРѕС‚РѕРєРѕР» Рё РѕРєРЅРѕ РїСЂРёРєР°Р·РѕРІ, СЃРєРѕРїРёСЂСѓРµРј РїСЂРёРєР°Р· Рё РІС‹РїРѕР»РЅРёРј РµРіРѕ
+  Call SendMessage(ProtokolHandle, WM_COMMAND, 250, 0&)    ' "РћС‡РёСЃС‚РёС‚СЊ РїСЂРѕС‚РѕРєРѕР»"
+  Call SendMessage(CommandFormHandle, WM_COMMAND, 203, 0&) ' "РћС‡РёСЃС‚РёС‚СЊ Р·Р°РґР°РЅРёРµ"
 
   Window_Set_Text CommandRichEdit, CommandsText
   
   If ManualMode Then MsgBox _
-  "В окно ввода приказов ТКЗ-2000 вставлен приказ ПРОВЕРКИ ЧУВСТВИТЕЛЬНОСТИ ПРИ ОПРОБОВАНИИ, подготовленный макросом, если Вы хотите изменить его," & _
-  "сделайте это." & vbCrLf & _
-  "Для продолжения работы макроса нажмите Ok"
+  "Р’ РѕРєРЅРѕ РІРІРѕРґР° РїСЂРёРєР°Р·РѕРІ РўРљР—-2000 РІСЃС‚Р°РІР»РµРЅ РїСЂРёРєР°Р· РџР РћР’Р•Р РљР Р§РЈР’РЎРўР’РРўР•Р›Р¬РќРћРЎРўР РџР Р РћРџР РћР‘РћР’РђРќРР, РїРѕРґРіРѕС‚РѕРІР»РµРЅРЅС‹Р№ РјР°РєСЂРѕСЃРѕРј, РµСЃР»Рё Р’С‹ С…РѕС‚РёС‚Рµ РёР·РјРµРЅРёС‚СЊ РµРіРѕ," & _
+  "СЃРґРµР»Р°Р№С‚Рµ СЌС‚Рѕ." & vbCrLf & _
+  "Р”Р»СЏ РїСЂРѕРґРѕР»Р¶РµРЅРёСЏ СЂР°Р±РѕС‚С‹ РјР°РєСЂРѕСЃР° РЅР°Р¶РјРёС‚Рµ Ok"
   
-  Call SendMessage(CommandFormHandle, WM_COMMAND, 179, 0&) ' "Расчет с эквиваленированием"
+  Call SendMessage(CommandFormHandle, WM_COMMAND, 182, 0&) ' "Р Р°СЃС‡РµС‚ СЃ СЌРєРІРёРІР°Р»РµРЅРёСЂРѕРІР°РЅРёРµРј"
   
-  ' Заберем результат для анализа
+  ' Р—Р°Р±РµСЂРµРј СЂРµР·СѓР»СЊС‚Р°С‚ РґР»СЏ Р°РЅР°Р»РёР·Р°
   ProtokolText = Window_Get_Text(ProtokolMemo)
   
-  ' Анализируем результаты расчета
+  ' РђРЅР°Р»РёР·РёСЂСѓРµРј СЂРµР·СѓР»СЊС‚Р°С‚С‹ СЂР°СЃС‡РµС‚Р°
   Analiz_Testing (ProtokolText)
 
-  ' Предложить пользователю сохранить расширенный протокол с комментариями
+  ' РџСЂРµРґР»РѕР¶РёС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ СЃРѕС…СЂР°РЅРёС‚СЊ СЂР°СЃС€РёСЂРµРЅРЅС‹Р№ РїСЂРѕС‚РѕРєРѕР» СЃ РєРѕРјРјРµРЅС‚Р°СЂРёСЏРјРё
   ProtokolText = CommandsText & vbCrLf & "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" & vbCrLf & ProtokolText
-  filePRT = Application.GetSaveAsFilename(ActiveWorkbook.Path & "\Опробование " & RootNode & " узел.prt", "Файлы протокола АРМ (*.prt), *.prt")
+  filePRT = Application.GetSaveAsFilename(ActiveWorkbook.Path & "\РћРїСЂРѕР±РѕРІР°РЅРёРµ " & RootNode & " СѓР·РµР».prt", "Р¤Р°Р№Р»С‹ РїСЂРѕС‚РѕРєРѕР»Р° РђР Рњ (*.prt), *.prt")
   If filePRT <> "False" Then
     FrFi = FreeFile
     Open filePRT For Output As FrFi
@@ -1232,7 +1240,7 @@ Public Sub Raschet_DZSH()
     Close FrFi
   End If
 
-  ' Уберем диалог процесса
+  ' РЈР±РµСЂРµРј РґРёР°Р»РѕРі РїСЂРѕС†РµСЃСЃР°
   If ProcessWnd > 0 Then DestroyWindow (ProcessWnd)
 
 End Sub
