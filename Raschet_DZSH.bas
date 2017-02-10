@@ -3,26 +3,27 @@
 ' ~~~~~~~~~~
 ' https://github.com/wyfinger/Raschet_DZSH
 ' Игорь Матвеев, miv@prim.so-ups.ru
-' 2013-2014
+' 2013-2016
 '
 
 Option Explicit
 
-Private Declare PtrSafe Function SendMessage Lib "user32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
-Private Declare PtrSafe Function GetWindow Lib "user32" (ByVal hwnd As Long, ByVal uCmd As Long) As Long
-Private Declare PtrSafe Function GetClassName Lib "user32" Alias "GetClassNameA" (ByVal hwnd As Long, ByVal lpClassName As String, ByVal nMaxCount As Long) As Long
-Private Declare PtrSafe Function GetWindowThreadProcessId Lib "user32" (ByVal hwnd As Long, lpdwProcessId As Long) As Long
+Private Declare PtrSafe Function SendMessage Lib "User32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
+Private Declare PtrSafe Function SendMessageStr Lib "User32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, ByVal lParam As String) As Long
+Private Declare PtrSafe Function GetWindow Lib "User32" (ByVal hwnd As Long, ByVal uCmd As Long) As Long
+Private Declare PtrSafe Function GetClassName Lib "User32" Alias "GetClassNameA" (ByVal hwnd As Long, ByVal lpClassName As String, ByVal nMaxCount As Long) As Long
+Private Declare PtrSafe Function GetWindowThreadProcessId Lib "User32" (ByVal hwnd As Long, lpdwProcessId As Long) As Long
 Private Declare PtrSafe Function OpenProcess Lib "kernel32" (ByVal dwDesiredAcess As Long, ByVal bInheritHandle As Long, ByVal dwProcessId As Long) As Long
 Private Declare PtrSafe Function CloseHandle Lib "kernel32" (ByVal hObject As Long) As Long
 Private Declare PtrSafe Function GetModuleFileNameEx Lib "PSAPI" Alias "GetModuleFileNameExA" (ByVal hProcess As Long, ByVal hModule As Long, ByVal lpFilename As String, ByVal nSize As Long) As Long
-Private Declare PtrSafe Function IsWindowVisible Lib "user32" (ByVal hwnd As Long) As Long
-Private Declare PtrSafe Function GetParent Lib "user32" (ByVal hwnd As Long) As Long
-Private Declare PtrSafe Function EnumWindows Lib "user32" (ByVal lpEnumFunc As Long, ByVal lParam As Long) As Long
-Private Declare PtrSafe Function CreateWindowEx Lib "user32" Alias "CreateWindowExA" (ByVal dwExStyle As Long, ByVal lpClassName As String, ByVal lpWindowName As String, ByVal dwStyle As Long, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hWndParent As Long, ByVal hMenu As Long, ByVal hInstance As Long, lpParam As Any) As Long
-Private Declare PtrSafe Function ShowWindow Lib "user32" (ByVal hwnd As Long, ByVal nCmdShow As Long) As Long
-Private Declare PtrSafe Function DestroyWindow Lib "user32" (ByVal hwnd As Long) As Long
-Private Declare PtrSafe Function GetWindowRect Lib "user32" (ByVal hwnd As Long, lpRect As RECT) As Long
-Private Declare PtrSafe Function GetKeyState Lib "user32" (ByVal nVirtKey As Long) As Integer
+Private Declare PtrSafe Function IsWindowVisible Lib "User32" (ByVal hwnd As Long) As Long
+Private Declare PtrSafe Function GetParent Lib "User32" (ByVal hwnd As Long) As Long
+Private Declare PtrSafe Function EnumWindows Lib "User32" (ByVal lpEnumFunc As Long, ByVal lParam As Long) As Long
+Private Declare PtrSafe Function CreateWindowEx Lib "User32" Alias "CreateWindowExA" (ByVal dwExStyle As Long, ByVal lpClassName As String, ByVal lpWindowName As String, ByVal dwStyle As Long, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hWndParent As Long, ByVal hMenu As Long, ByVal hInstance As Long, lpParam As Any) As Long
+Private Declare PtrSafe Function ShowWindow Lib "User32" (ByVal hwnd As Long, ByVal nCmdShow As Long) As Long
+Private Declare PtrSafe Function DestroyWindow Lib "User32" (ByVal hwnd As Long) As Long
+Private Declare PtrSafe Function GetWindowRect Lib "User32" (ByVal hwnd As Long, lpRect As RECT) As Long
+Private Declare PtrSafe Function GetKeyState Lib "User32" (ByVal nVirtKey As Long) As Integer
 
 Private Const WM_COMMAND = &H111
 Private Const WM_PASTE = &H302
@@ -30,6 +31,9 @@ Private Const WM_CUT = &H300
 Private Const GW_CHILD = &H5
 Private Const GW_HWNDNEXT = &H2
 Private Const EM_SETSEL = &HB1
+Private Const WM_SETTEXT = &HC
+Private Const WM_GETTEXT As Integer = &HD
+Private Const WM_GETTEXTLENGTH As Integer = &HE
 Private Const PROCESS_ALL_ACCESS = &H1F0FFF
 Private Const WS_EX_TOOLWINDOW = &H80
 Private Const WS_SIZEBOX = &H40000
@@ -211,17 +215,8 @@ End Function
 Private Function Window_Set_Text(hwnd As Long, sText As String)
 '
 ' Установить в поле ввода текст
-'
 
-  Dim d As Object
-  Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
-  d.SetText (sText)
-  d.PutInClipboard
-
-  SendMessage hwnd, EM_SETSEL, 0, -1
-  SendMessage hwnd, WM_PASTE, 0, 0
-
-  Set d = Nothing
+SendMessageStr hwnd, WM_SETTEXT, 0, sText
 
 End Function
 
@@ -229,18 +224,15 @@ End Function
 Private Function Window_Get_Text(hwnd As Long)
 '
 ' Забираем текст из поля ввода
-'
 
-  SendMessage hwnd, EM_SETSEL, 0, -1
-  SendMessage hwnd, WM_CUT, 0, 0
+Dim TextLen As Long
+TextLen = SendMessage(hwnd, WM_GETTEXTLENGTH, 0, 0) + 1
 
-  ' Копируем приказ в буфер
-  Dim d As Object
-  Set d = GetObject("New:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")
-  d.GetFromClipboard
-  Window_Get_Text = d.GetText
+Dim sStr As String
+sStr = Space(TextLen)
 
-  Set d = Nothing
+Call SendMessageStr(hwnd, WM_GETTEXT, TextLen, sStr)
+Window_Get_Text = sStr
 
 End Function
 
@@ -463,7 +455,7 @@ NotExists:
 End Function
 
 
-Private Function Array_Find(Source(), Val, Optional Col As Integer = -1) As Integer
+Private Function Array_Find(Source(), Val, Optional col As Integer = -1) As Integer
 '
 ' Проверка содержания в массиве Source значения Val в столбце Col,
 ' если Col = -1 считаем, что массив одномерный.
@@ -476,12 +468,12 @@ Private Function Array_Find(Source(), Val, Optional Col As Integer = -1) As Inte
   If Not Array_Exists(Source) Then Exit Function
 
   For i = LBound(Source) To UBound(Source)
-    If Col = -1 Then
+    If col = -1 Then
       If Source(i) = Val Then
         Array_Find = i
       End If
     Else
-      If Source(Col, i) = Val Then
+      If Source(col, i) = Val Then
         Array_Find = i
       End If
     End If
